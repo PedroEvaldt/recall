@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: recall-postgres
+    environment:
+      POSTGRES_USER: recall
+      POSTGRES_PASSWORD: recall
+      POSTGRES_DB: recall
+    ports:
+      - "5433:5432"
+    volumes:
+      - recall-pg-data:/var/lib/postgresql/data
+volumes:
+  recall-pg-data:

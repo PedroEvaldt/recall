@@ -34,3 +34,6 @@ go.work.sum
 # codex files
 AGENTS.md
 .codex
+
+# Storage
+./storage

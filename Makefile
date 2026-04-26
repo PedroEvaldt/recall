@@ -12,13 +12,13 @@ db-shell:
 	docker compose exec postgres psql -U recall -d recall
 
 goose-up:
-	GOOSE_DRIVER=postgres GOOSE_DBSTRING="$(DB_URL)" goose -dir internal/storage/migrations up
+	GOOSE_DRIVER=postgres GOOSE_DBSTRING="$(DB_URL)" goose -dir internal/storage/schemas up
 
 goose-down:
-	GOOSE_DRIVER=postgres GOOSE_DBSTRING="$(DB_URL)" goose -dir internal/storage/migrations down
+	GOOSE_DRIVER=postgres GOOSE_DBSTRING="$(DB_URL)" goose -dir internal/storage/schemas down
 
 goose-status:
-	GOOSE_DRIVER=postgres GOOSE_DBSTRING="$(DB_URL)" goose -dir internal/storage/migrations status
+	GOOSE_DRIVER=postgres GOOSE_DBSTRING="$(DB_URL)" goose -dir internal/storage/schemas status
 
 run-server:
 	go run ./cmd/server

@@ -1,23 +1,26 @@
-package handlres
+package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 )
 
-func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) error {
-	response, err := json.Marshal(payload)
+func respondWithJSON(w http.ResponseWriter, code int, payload any) {
+	body, err := json.Marshal(payload)
 	if err != nil {
-		return err
+		log.Printf("respondWithJSON marshal: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(code)
-	w.Write(response)
-	return nil
+	if _, err := w.Write(body); err != nil {
+		log.Printf("respondWithJSON write: %v", err)
+	}
 }
 
-func respondWithError(w http.ResponseWriter, code int, msg string) error {
-	return respondWithJSON(w, code, map[string]string{"error": msg})
+func respondWithError(w http.ResponseWriter, code int, msg string) {
+	respondWithJSON(w, code, map[string]string{"error": msg})
 }

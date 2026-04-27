@@ -10,17 +10,17 @@ INSERT INTO
   )
 VALUES
   (
-    sqlc.arg (create_title)::text,
-    sqlc.arg (create_slug)::text,
-    sqlc.arg (create_filename)::text,
-    sqlc.arg (create_mime_type)::text,
-    sqlc.arg (create_size_bytes)::int,
-    sqlc.arg (create_storage_path)::text
+    sqlc.arg (title)::text,
+    sqlc.arg (slug)::text,
+    sqlc.arg (filename)::text,
+    sqlc.arg (mime_type)::text,
+    sqlc.arg (size_bytes)::int,
+    sqlc.arg (storage_path)::text
   )
 RETURNING
   *;
 
--- name: GetDocument :many
+-- name: ListDocuments :many
 SELECT
   *
 FROM

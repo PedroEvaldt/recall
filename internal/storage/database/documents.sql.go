@@ -3,7 +3,7 @@
 //   sqlc v1.31.1
 // source: documents.sql
 
-package db
+package database
 
 import (
 	"context"
@@ -33,22 +33,22 @@ RETURNING
 `
 
 type CreateDocumentParams struct {
-	CreateTitle       string
-	CreateSlug        string
-	CreateFilename    string
-	CreateMimeType    string
-	CreateSizeBytes   int32
-	CreateStoragePath string
+	Title       string
+	Slug        string
+	Filename    string
+	MimeType    string
+	SizeBytes   int32
+	StoragePath string
 }
 
 func (q *Queries) CreateDocument(ctx context.Context, arg CreateDocumentParams) (Document, error) {
 	row := q.db.QueryRow(ctx, createDocument,
-		arg.CreateTitle,
-		arg.CreateSlug,
-		arg.CreateFilename,
-		arg.CreateMimeType,
-		arg.CreateSizeBytes,
-		arg.CreateStoragePath,
+		arg.Title,
+		arg.Slug,
+		arg.Filename,
+		arg.MimeType,
+		arg.SizeBytes,
+		arg.StoragePath,
 	)
 	var i Document
 	err := row.Scan(
@@ -65,7 +65,7 @@ func (q *Queries) CreateDocument(ctx context.Context, arg CreateDocumentParams) 
 	return i, err
 }
 
-const getDocument = `-- name: GetDocument :many
+const listDocuments = `-- name: ListDocuments :many
 SELECT
   id, title, slug, filename, mime_type, size_bytes, storage_path, created_at, updated_at
 FROM
@@ -76,8 +76,8 @@ ORDER BY
   created_at DESC
 `
 
-func (q *Queries) GetDocument(ctx context.Context, searchTitle string) ([]Document, error) {
-	rows, err := q.db.Query(ctx, getDocument, searchTitle)
+func (q *Queries) ListDocuments(ctx context.Context, searchTitle string) ([]Document, error) {
+	rows, err := q.db.Query(ctx, listDocuments, searchTitle)
 	if err != nil {
 		return nil, err
 	}

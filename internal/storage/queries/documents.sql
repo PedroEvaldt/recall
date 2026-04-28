@@ -30,3 +30,15 @@ WHERE
 ORDER BY
   created_at DESC;
 
+-- name: GetDocument :one
+SELECT
+  filename,
+  mime_type,
+  storage_path,
+  size_bytes,
+  created_at
+FROM
+  documents
+WHERE
+  id = sqlc.arg (id)::uuid;
+

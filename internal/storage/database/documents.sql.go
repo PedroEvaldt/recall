@@ -7,6 +7,8 @@ package database
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createDocument = `-- name: CreateDocument :one
@@ -61,6 +63,40 @@ func (q *Queries) CreateDocument(ctx context.Context, arg CreateDocumentParams) 
 		&i.StoragePath,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getDocument = `-- name: GetDocument :one
+SELECT
+  filename,
+  mime_type,
+  storage_path,
+  size_bytes,
+  created_at
+FROM
+  documents
+WHERE
+  id = $1::uuid
+`
+
+type GetDocumentRow struct {
+	Filename    string
+	MimeType    string
+	StoragePath string
+	SizeBytes   int32
+	CreatedAt   pgtype.Timestamp
+}
+
+func (q *Queries) GetDocument(ctx context.Context, id pgtype.UUID) (GetDocumentRow, error) {
+	row := q.db.QueryRow(ctx, getDocument, id)
+	var i GetDocumentRow
+	err := row.Scan(
+		&i.Filename,
+		&i.MimeType,
+		&i.StoragePath,
+		&i.SizeBytes,
+		&i.CreatedAt,
 	)
 	return i, err
 }

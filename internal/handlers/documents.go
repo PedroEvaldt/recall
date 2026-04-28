@@ -1,13 +1,18 @@
 package handlers
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"path/filepath"
 	"strings"
 
+	"github.com/PedroEvaldt/recall/internal/api"
 	"github.com/PedroEvaldt/recall/internal/storage/database"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const maxUploadSize = 50 << 20 // 50 MiB
@@ -58,7 +63,20 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, "failed to save document")
 		return
 	}
-	respondWithJSON(w, http.StatusCreated, document)
+
+	id, err := uuid.FromBytes(document.ID.Bytes[:])
+	if err != nil {
+		log.Printf("failed to transform from bytes to uuid: %v", err)
+		respondWithError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	respondWithJSON(w, http.StatusCreated, api.DocumentResponse{
+		ID:        id,
+		Title:     document.Title,
+		MimeType:  document.MimeType,
+		Filename:  document.Filename,
+		CreatedAt: document.CreatedAt.Time,
+	})
 }
 
 func slugify(s string) string {
@@ -66,4 +84,63 @@ func slugify(s string) string {
 	s = strings.ReplaceAll(s, " ", "-")
 	// produção: usar github.com/gosimple/slug
 	return s
+}
+
+func (h *Handler) ListDocuments(w http.ResponseWriter, r *http.Request) {
+	content := r.URL.Query().Get("q")
+	if content == "" {
+		respondWithError(w, http.StatusBadRequest, "could not find query")
+		return
+	}
+	documents, err := h.queries.ListDocuments(r.Context(), content)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "failed to list documents")
+		return
+	}
+	response := make([]api.DocumentResponse, 0, len(documents))
+	for _, document := range documents {
+		id, err := uuid.FromBytes(document.ID.Bytes[:])
+		if err != nil {
+			log.Printf("failed to transform from bytes to uuid: %v", err)
+			respondWithError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+		response = append(response, api.DocumentResponse{
+			ID:        id,
+			Title:     document.Title,
+			MimeType:  document.MimeType,
+			Filename:  document.Filename,
+			CreatedAt: document.CreatedAt.Time,
+		})
+	}
+	respondWithJSON(w, http.StatusOK, response)
+}
+
+func (h *Handler) GetDocument(w http.ResponseWriter, r *http.Request) {
+	docID := r.PathValue("id")
+	docUUID, err := uuid.Parse(docID)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "could not transform this id to uuid")
+		return
+	}
+	pgID := pgtype.UUID{Bytes: docUUID, Valid: true}
+	document, err := h.queries.GetDocument(r.Context(), pgID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			respondWithError(w, http.StatusNotFound, "uuid does not exist")
+			return
+		}
+		respondWithError(w, http.StatusInternalServerError, "failed to get document")
+		return
+	}
+
+	file, err := h.fileStore.OpenFile(document.StoragePath)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("getting file: %v", err))
+		return
+	}
+	defer file.Close()
+
+	w.Header().Set("Content-Type", document.MimeType)
+	http.ServeContent(w, r, document.Filename, document.CreatedAt.Time, file)
 }

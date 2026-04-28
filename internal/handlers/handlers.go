@@ -27,5 +27,5 @@ func NewHandler(pool *pgxpool.Pool, queries *database.Queries, fileStore *storag
 func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /health", h.Health)
 	mux.HandleFunc("POST /documents", h.CreateDocument)
-	// mux.HandleFunc("GET /documents", h.ListDocuments)
+	mux.HandleFunc("GET /documents", h.ListDocuments)
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -65,4 +66,15 @@ func (f *FileStore) DeleteFile(relPath string) error {
 		return fmt.Errorf("delete file: %w", err)
 	}
 	return nil
+}
+
+func (f *FileStore) OpenFile(path string) (io.ReadSeekCloser, error) {
+	file, err := os.Open(filepath.Join(f.baseDir, path))
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, fmt.Errorf("file does not exist: %w", err)
+		}
+		return nil, fmt.Errorf("open file: %w", err)
+	}
+	return file, nil
 }

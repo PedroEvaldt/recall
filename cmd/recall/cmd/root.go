@@ -38,7 +38,9 @@ func init() {
 		"",
 		"URL of the recall server (env: RECALL_SERVER for default)",
 	)
-	viper.BindPFlag("server", rootCmd.PersistentFlags().Lookup("server"))
+	if err := viper.BindPFlag("server", rootCmd.PersistentFlags().Lookup("server")); err != nil {
+		panic(fmt.Sprintf("bind server flag: %v", err))
+	}
 }
 
 func initConfig() {

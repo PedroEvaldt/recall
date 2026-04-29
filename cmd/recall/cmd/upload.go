@@ -34,17 +34,17 @@ var uploadCmd = &cobra.Command{
 
 		file, err := os.Open(path)
 		if err != nil {
-			return err
+			return fmt.Errorf("open %s: %w", path, err)
 		}
 		defer file.Close()
 
 		c, err := client.New(serverURL, 30*time.Second)
 		if err != nil {
-			return err
+			return fmt.Errorf("create client: %w", err)
 		}
 		doc, err := c.PostDocument(cmd.Context(), title, filepath.Base(path), file)
 		if err != nil {
-			return err
+			return fmt.Errorf("post document: %w", err)
 		}
 
 		fmt.Printf("Uploaded document\nName: %s\nId: %v \n", doc.Title, doc.ID)

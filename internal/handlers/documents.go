@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"path/filepath"
@@ -20,6 +19,7 @@ const maxUploadSize = 50 << 20 // 50 MiB
 func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(maxUploadSize)
 	if err != nil {
+		log.Printf("multipart form error: %v", err)
 		respondWithError(w, http.StatusBadRequest, "failed to get multipart form")
 		return
 	}
@@ -30,6 +30,7 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 	// Pega arquivo
 	file, header, err := r.FormFile("file")
 	if err != nil {
+		log.Printf("get file from form: %v", err)
 		respondWithError(w, http.StatusBadRequest, "failed to get file from form")
 		return
 	}
@@ -42,6 +43,7 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 	uuidInt := uuid.New()
 	path, size, err := h.fileStore.SaveFile(uuidInt, extension, file)
 	if err != nil {
+		log.Printf("save file: %v", err)
 		respondWithError(w, http.StatusInternalServerError, "failed to save file")
 		return
 	}
@@ -64,12 +66,7 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := uuid.FromBytes(document.ID.Bytes[:])
-	if err != nil {
-		log.Printf("failed to transform from bytes to uuid: %v", err)
-		respondWithError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
+	id, _ := uuid.FromBytes(document.ID.Bytes[:])
 	respondWithJSON(w, http.StatusCreated, api.DocumentResponse{
 		ID:        id,
 		Title:     document.Title,
@@ -94,17 +91,13 @@ func (h *Handler) ListDocuments(w http.ResponseWriter, r *http.Request) {
 	}
 	documents, err := h.queries.ListDocuments(r.Context(), content)
 	if err != nil {
+		log.Printf("list documents: %v", err)
 		respondWithError(w, http.StatusInternalServerError, "failed to list documents")
 		return
 	}
 	response := make([]api.DocumentResponse, 0, len(documents))
 	for _, document := range documents {
-		id, err := uuid.FromBytes(document.ID.Bytes[:])
-		if err != nil {
-			log.Printf("failed to transform from bytes to uuid: %v", err)
-			respondWithError(w, http.StatusInternalServerError, "internal error")
-			return
-		}
+		id, _ := uuid.FromBytes(document.ID.Bytes[:])
 		response = append(response, api.DocumentResponse{
 			ID:        id,
 			Title:     document.Title,
@@ -120,6 +113,7 @@ func (h *Handler) GetDocument(w http.ResponseWriter, r *http.Request) {
 	docID := r.PathValue("id")
 	docUUID, err := uuid.Parse(docID)
 	if err != nil {
+		log.Printf("transform id to uuid: %v", err)
 		respondWithError(w, http.StatusBadRequest, "could not transform this id to uuid")
 		return
 	}
@@ -130,13 +124,15 @@ func (h *Handler) GetDocument(w http.ResponseWriter, r *http.Request) {
 			respondWithError(w, http.StatusNotFound, "uuid does not exist")
 			return
 		}
+		log.Printf("get document: %v", err)
 		respondWithError(w, http.StatusInternalServerError, "failed to get document")
 		return
 	}
 
 	file, err := h.fileStore.OpenFile(document.StoragePath)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("getting file: %v", err))
+		log.Printf("get file: %v", err)
+		respondWithError(w, http.StatusInternalServerError, "failed to get file")
 		return
 	}
 	defer file.Close()

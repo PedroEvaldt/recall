@@ -10,6 +10,7 @@ import (
 // Config concentra todas as variáveis de ambiente lidas no startup.
 type Config struct {
 	DBURL       string
+	Host        string
 	Port        string
 	StoragePath string
 }
@@ -21,6 +22,7 @@ func Load() (*Config, error) {
 
 	cfg := &Config{
 		DBURL:       getEnv("DB_URL", ""),
+		Host:        getEnv("SERVER_HOST", "localhost"),
 		Port:        getEnv("SERVER_PORT", "8080"),
 		StoragePath: getEnv("STORAGE_PATH", "./storage"),
 	}

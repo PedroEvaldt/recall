@@ -24,12 +24,12 @@ var getCmd = &cobra.Command{
 
 		c, err := client.New(serverURL, 30*time.Second)
 		if err != nil {
-			return err
-		} // TODO verificar se é isso mesmo o jeito de fazer
+			return fmt.Errorf("create client: %w", err)
+		}
 
 		docs, err := c.ListDocuments(cmd.Context(), query)
 		if err != nil {
-			return err
+			return fmt.Errorf("list documents: %w", err)
 		}
 		if len(docs) == 0 {
 			return fmt.Errorf("no documents found for: %s", query)
@@ -38,7 +38,7 @@ var getCmd = &cobra.Command{
 
 		body, err := c.GetContent(cmd.Context(), doc.ID)
 		if err != nil {
-			return err
+			return fmt.Errorf("get content: %w", err)
 		}
 		defer body.Close()
 

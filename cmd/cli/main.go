@@ -1,5 +1,7 @@
 package main
 
+import "github.com/PedroEvaldt/recall/cmd/cli/cmd"
+
 func main() {
-	// TODO: implementar CLI do recall.
+	cmd.Execute()
 }

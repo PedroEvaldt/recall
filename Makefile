@@ -1,4 +1,4 @@
-.PHONY: db-up db-down db-shell goose-up goose-down run-server build
+.PHONY: db-up db-down db-shell goose-up goose-down run-server build install
 
 DB_URL?=postgres://recall:recall@localhost:5433/recall?sslmode=disable
 
@@ -25,4 +25,7 @@ run-server:
 
 build:
 	go build -o bin/server ./cmd/server
-	go build -o bin/cli ./cmd/cli
+	go build -o bin/recall ./cmd/recall
+
+install:
+	go install ./cmd/recall

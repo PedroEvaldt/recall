@@ -34,7 +34,7 @@ var listCmd = &cobra.Command{
 			return fmt.Errorf("list documents: %w", err)
 		}
 		if len(docs) == 0 {
-			fmt.Fprintf(os.Stderr, "no documents found for: %s", query)
+			printNoResults(os.Stderr, query)
 			return nil
 		}
 		if len(docs) > limit {
@@ -42,8 +42,14 @@ var listCmd = &cobra.Command{
 		}
 
 		for i, doc := range docs {
-			if _, err := fmt.Fprintf(os.Stdout, "%d.\nId: %v\nTitle: %s\nCreated at: %v\n", (i + 1), doc.ID, doc.Title, doc.CreatedAt); err != nil {
-				return fmt.Errorf("copy content: %w", err)
+			if len(doc.Tags) > 0 {
+				if _, err := fmt.Fprintf(os.Stdout, "%d.\nId: %v\nTitle: %s\nTags: %s\nCreated at: %v\n", (i + 1), doc.ID, doc.Title, strings.Join(doc.Tags, ", "), doc.CreatedAt); err != nil {
+					return fmt.Errorf("copy content: %w", err)
+				}
+			} else {
+				if _, err := fmt.Fprintf(os.Stdout, "%d.\nId: %v\nTitle: %s\nCreated at: %v\n", (i + 1), doc.ID, doc.Title, doc.CreatedAt); err != nil {
+					return fmt.Errorf("copy content: %w", err)
+				}
 			}
 		}
 		return nil

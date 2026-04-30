@@ -32,12 +32,17 @@ var getCmd = &cobra.Command{
 			return fmt.Errorf("list documents: %w", err)
 		}
 		if len(docs) == 0 {
-			return fmt.Errorf("no documents found for: %s", query)
+			printNoResults(os.Stderr, query)
+			return errSilent
 		}
 		doc := docs[0] // TODO put interactive menu
 
 		body, err := c.GetContent(cmd.Context(), doc.ID)
 		if err != nil {
+			if client.IsNotFound(err) {
+				printMissingContent(os.Stderr, doc.Title)
+				return errSilent
+			}
 			return fmt.Errorf("get content: %w", err)
 		}
 		defer body.Close()

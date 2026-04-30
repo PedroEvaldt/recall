@@ -4,16 +4,25 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/PedroEvaldt/recall/internal/api"
 	"github.com/google/uuid"
 )
+
+// ErrNotFound is returned by GetContent when the server reports the document
+// or its underlying file is gone (HTTP 404).
+var ErrNotFound = errors.New("document not found")
+
+// IsNotFound reports whether err wraps ErrNotFound.
+func IsNotFound(err error) bool { return errors.Is(err, ErrNotFound) }
 
 type Client struct {
 	baseURL    *url.URL
@@ -86,7 +95,7 @@ func (c *Client) GetContent(ctx context.Context, id uuid.UUID) (io.ReadCloser, e
 	if resp.StatusCode != http.StatusOK {
 		defer resp.Body.Close()
 		if resp.StatusCode == http.StatusNotFound {
-			return nil, fmt.Errorf("document not found: %s", id)
+			return nil, fmt.Errorf("%w: %s", ErrNotFound, id)
 		}
 		var errResp struct {
 			Error string `json:"error"`
@@ -100,13 +109,19 @@ func (c *Client) GetContent(ctx context.Context, id uuid.UUID) (io.ReadCloser, e
 	return resp.Body, nil
 }
 
-func (c *Client) PostDocument(ctx context.Context, title, filename string, body io.Reader) (*api.DocumentResponse, error) {
+func (c *Client) PostDocument(ctx context.Context, title, filename string, body io.Reader, tags []string) (*api.DocumentResponse, error) {
 	var buf bytes.Buffer
 	writer := multipart.NewWriter(&buf)
 
 	err := writer.WriteField("title", title)
 	if err != nil {
 		return nil, fmt.Errorf("write title field: %w", err)
+	}
+	if len(tags) > 0 {
+		err = writer.WriteField("tags", strings.Join(tags, ","))
+		if err != nil {
+			return nil, fmt.Errorf("write tags field: %w", err)
+		}
 	}
 
 	form, err := writer.CreateFormFile("file", filename)

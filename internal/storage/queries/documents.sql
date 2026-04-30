@@ -6,7 +6,8 @@ INSERT INTO
     filename,
     mime_type,
     size_bytes,
-    storage_path
+    storage_path,
+    tags
   )
 VALUES
   (
@@ -15,7 +16,8 @@ VALUES
     sqlc.arg (filename)::text,
     sqlc.arg (mime_type)::text,
     sqlc.arg (size_bytes)::int,
-    sqlc.arg (storage_path)::text
+    sqlc.arg (storage_path)::text,
+    sqlc.arg (tags)::text[]
   )
 RETURNING
   *;
@@ -26,7 +28,17 @@ SELECT
 FROM
   documents
 WHERE
-  title ILIKE '%' || sqlc.arg (search_title)::text || '%'
+  (
+    title ILIKE '%' || sqlc.arg (search_term)::text || '%'
+  )
+  OR EXISTS (
+    SELECT
+      1
+    FROM
+      unnest(tags) AS t
+    WHERE
+      t ILIKE '%' || sqlc.arg (search_term)::text || '%'
+  )
 ORDER BY
   created_at DESC;
 
@@ -36,6 +48,7 @@ SELECT
   mime_type,
   storage_path,
   size_bytes,
+  tags,
   created_at
 FROM
   documents

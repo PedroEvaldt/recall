@@ -78,3 +78,9 @@ func (f *FileStore) OpenFile(path string) (io.ReadSeekCloser, error) {
 	}
 	return file, nil
 }
+
+// Exists reports whether the file at relPath is present on disk.
+func (f *FileStore) Exists(relPath string) bool {
+	_, err := os.Stat(filepath.Join(f.baseDir, relPath))
+	return err == nil
+}

@@ -3,7 +3,7 @@ CREATE TABLE documents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title VARCHAR(100) NOT NULL UNIQUE,
   slug VARCHAR(100) NOT NULL UNIQUE,
-  filename TEXT NOT NULL UNIQUE,
+  filename TEXT NOT NULL,
   mime_type TEXT NOT NULL,
   size_bytes INT NOT NULL,
   storage_path TEXT NOT NULL,

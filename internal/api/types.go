@@ -11,5 +11,6 @@ type DocumentResponse struct {
 	Title     string    `json:"title"`
 	MimeType  string    `json:"mime_type"`
 	Filename  string    `json:"filename"`
+	Tags      []string  `json:"tags"`
 	CreatedAt time.Time `json:"created_at"`
 }

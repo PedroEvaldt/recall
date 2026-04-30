@@ -19,7 +19,8 @@ INSERT INTO
     filename,
     mime_type,
     size_bytes,
-    storage_path
+    storage_path,
+    tags
   )
 VALUES
   (
@@ -28,10 +29,11 @@ VALUES
     $3::text,
     $4::text,
     $5::int,
-    $6::text
+    $6::text,
+    $7::text[]
   )
 RETURNING
-  id, title, slug, filename, mime_type, size_bytes, storage_path, created_at, updated_at
+  id, title, slug, filename, mime_type, size_bytes, storage_path, created_at, updated_at, tags
 `
 
 type CreateDocumentParams struct {
@@ -41,6 +43,7 @@ type CreateDocumentParams struct {
 	MimeType    string
 	SizeBytes   int32
 	StoragePath string
+	Tags        []string
 }
 
 func (q *Queries) CreateDocument(ctx context.Context, arg CreateDocumentParams) (Document, error) {
@@ -51,6 +54,7 @@ func (q *Queries) CreateDocument(ctx context.Context, arg CreateDocumentParams) 
 		arg.MimeType,
 		arg.SizeBytes,
 		arg.StoragePath,
+		arg.Tags,
 	)
 	var i Document
 	err := row.Scan(
@@ -63,6 +67,7 @@ func (q *Queries) CreateDocument(ctx context.Context, arg CreateDocumentParams) 
 		&i.StoragePath,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Tags,
 	)
 	return i, err
 }
@@ -73,6 +78,7 @@ SELECT
   mime_type,
   storage_path,
   size_bytes,
+  tags,
   created_at
 FROM
   documents
@@ -85,6 +91,7 @@ type GetDocumentRow struct {
 	MimeType    string
 	StoragePath string
 	SizeBytes   int32
+	Tags        []string
 	CreatedAt   pgtype.Timestamp
 }
 
@@ -96,6 +103,7 @@ func (q *Queries) GetDocument(ctx context.Context, id pgtype.UUID) (GetDocumentR
 		&i.MimeType,
 		&i.StoragePath,
 		&i.SizeBytes,
+		&i.Tags,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -103,17 +111,27 @@ func (q *Queries) GetDocument(ctx context.Context, id pgtype.UUID) (GetDocumentR
 
 const listDocuments = `-- name: ListDocuments :many
 SELECT
-  id, title, slug, filename, mime_type, size_bytes, storage_path, created_at, updated_at
+  id, title, slug, filename, mime_type, size_bytes, storage_path, created_at, updated_at, tags
 FROM
   documents
 WHERE
-  title ILIKE '%' || $1::text || '%'
+  (
+    title ILIKE '%' || $1::text || '%'
+  )
+  OR EXISTS (
+    SELECT
+      1
+    FROM
+      unnest(tags) AS t
+    WHERE
+      t ILIKE '%' || $1::text || '%'
+  )
 ORDER BY
   created_at DESC
 `
 
-func (q *Queries) ListDocuments(ctx context.Context, searchTitle string) ([]Document, error) {
-	rows, err := q.db.Query(ctx, listDocuments, searchTitle)
+func (q *Queries) ListDocuments(ctx context.Context, searchTerm string) ([]Document, error) {
+	rows, err := q.db.Query(ctx, listDocuments, searchTerm)
 	if err != nil {
 		return nil, err
 	}
@@ -131,6 +149,7 @@ func (q *Queries) ListDocuments(ctx context.Context, searchTitle string) ([]Docu
 			&i.StoragePath,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Tags,
 		); err != nil {
 			return nil, err
 		}

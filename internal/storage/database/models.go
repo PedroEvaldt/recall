@@ -18,4 +18,5 @@ type Document struct {
 	StoragePath string
 	CreatedAt   pgtype.Timestamp
 	UpdatedAt   pgtype.Timestamp
+	Tags        []string
 }

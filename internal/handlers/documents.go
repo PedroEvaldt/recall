@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"io/fs"
 	"log"
 	"net/http"
 	"path/filepath"
@@ -26,6 +27,7 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 
 	// Pega campo de texto (chama ParseMultipartForm implicitamente se ainda não parseou)
 	title := r.FormValue("title")
+	tags := normalizeTags(r.FormValue("tags"))
 
 	// Pega arquivo
 	file, header, err := r.FormFile("file")
@@ -57,8 +59,10 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 		MimeType:    mimeType,
 		SizeBytes:   int32(size),
 		StoragePath: path,
+		Tags:        tags,
 	})
 	if err != nil {
+		log.Printf("create document: %v", err)
 		if delErr := h.fileStore.DeleteFile(path); delErr != nil {
 			log.Printf("failed to cleanup orphan file %s: %v", path, delErr)
 		}
@@ -72,24 +76,18 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 		Title:     document.Title,
 		MimeType:  document.MimeType,
 		Filename:  document.Filename,
+		Tags:      document.Tags,
 		CreatedAt: document.CreatedAt.Time,
 	})
 }
 
-func slugify(s string) string {
-	s = strings.ToLower(s)
-	s = strings.ReplaceAll(s, " ", "-")
-	// produção: usar github.com/gosimple/slug
-	return s
-}
-
 func (h *Handler) ListDocuments(w http.ResponseWriter, r *http.Request) {
-	content := r.URL.Query().Get("q")
-	if content == "" {
+	searchTerm := r.URL.Query().Get("q")
+	if searchTerm == "" {
 		respondWithError(w, http.StatusBadRequest, "could not find query")
 		return
 	}
-	documents, err := h.queries.ListDocuments(r.Context(), content)
+	documents, err := h.queries.ListDocuments(r.Context(), searchTerm)
 	if err != nil {
 		log.Printf("list documents: %v", err)
 		respondWithError(w, http.StatusInternalServerError, "failed to list documents")
@@ -97,12 +95,17 @@ func (h *Handler) ListDocuments(w http.ResponseWriter, r *http.Request) {
 	}
 	response := make([]api.DocumentResponse, 0, len(documents))
 	for _, document := range documents {
+		if !h.fileStore.Exists(document.StoragePath) {
+			log.Printf("list: skipping %s — storage file missing at %s", document.Title, document.StoragePath)
+			continue
+		}
 		id, _ := uuid.FromBytes(document.ID.Bytes[:])
 		response = append(response, api.DocumentResponse{
 			ID:        id,
 			Title:     document.Title,
 			MimeType:  document.MimeType,
 			Filename:  document.Filename,
+			Tags:      document.Tags,
 			CreatedAt: document.CreatedAt.Time,
 		})
 	}
@@ -131,6 +134,11 @@ func (h *Handler) GetDocument(w http.ResponseWriter, r *http.Request) {
 
 	file, err := h.fileStore.OpenFile(document.StoragePath)
 	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			log.Printf("get file: storage file missing at %s", document.StoragePath)
+			respondWithError(w, http.StatusNotFound, "document content has been removed from storage")
+			return
+		}
 		log.Printf("get file: %v", err)
 		respondWithError(w, http.StatusInternalServerError, "failed to get file")
 		return
@@ -139,4 +147,33 @@ func (h *Handler) GetDocument(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", document.MimeType)
 	http.ServeContent(w, r, document.Filename, document.CreatedAt.Time, file)
+}
+
+func slugify(s string) string {
+	s = strings.ToLower(s)
+	s = strings.ReplaceAll(s, " ", "-")
+	// produção: usar github.com/gosimple/slug
+	return s
+}
+
+func normalizeTags(raw string) []string {
+	if raw == "" {
+		return []string{}
+	}
+	parts := strings.Split(raw, ",")
+	tags := make([]string, 0, len(parts))
+	seen := map[string]struct{}{}
+	for _, part := range parts {
+		tag := strings.TrimSpace(strings.ToLower(part))
+		if tag == "" {
+			continue
+		}
+		if _, ok := seen[tag]; ok {
+			continue
+		}
+		tags = append(tags, tag)
+		seen[tag] = struct{}{}
+
+	}
+	return tags
 }

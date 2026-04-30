@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -20,11 +21,15 @@ var rootCmd = &cobra.Command{
 	Long: `A easy to use cli tool to get resumes and fast tips
 		   for concepts that you already know but forgot, easy
 		   access while programming`,
-	SilenceUsage: true,
+	SilenceUsage:  true,
+	SilenceErrors: true,
 }
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
+		if !errors.Is(err, errSilent) {
+			printError(os.Stderr, err)
+		}
 		os.Exit(1)
 	}
 }

@@ -27,6 +27,7 @@ var uploadCmd = &cobra.Command{
 		serverURL := viper.GetString("server")
 		path := args[0]
 		title := uploadTitle
+		tags := uploadTags
 
 		if title == "" {
 			title = strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
@@ -42,7 +43,7 @@ var uploadCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("create client: %w", err)
 		}
-		doc, err := c.PostDocument(cmd.Context(), title, filepath.Base(path), file)
+		doc, err := c.PostDocument(cmd.Context(), title, filepath.Base(path), file, tags)
 		if err != nil {
 			return fmt.Errorf("post document: %w", err)
 		}
@@ -61,10 +62,10 @@ func init() {
 		"",
 		"title of the document (defaults to filename without extension",
 	)
-	// uploadCmd.Flags().StringSliceVar(
-	// 	&uploadTags,
-	// 	"tags",
-	// 	nil,
-	// 	"comma-separated list of tags",
-	// )
+	uploadCmd.Flags().StringSliceVar(
+		&uploadTags,
+		"tags",
+		nil,
+		"comma-separated list of tags",
+	)
 }

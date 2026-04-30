@@ -17,9 +17,12 @@ import (
 	"github.com/google/uuid"
 )
 
-// ErrNotFound is returned by GetContent when the server reports the document
-// or its underlying file is gone (HTTP 404).
-var ErrNotFound = errors.New("document not found")
+var (
+	ErrNotFound    = errors.New("document not found")
+	ErrEmptyURL    = errors.New("server URL is empty")
+	ErrInvalidURL  = errors.New("server URL is invalid")
+	ErrMissingPart = errors.New("server URL must include scheme and host")
+)
 
 // IsNotFound reports whether err wraps ErrNotFound.
 func IsNotFound(err error) bool { return errors.Is(err, ErrNotFound) }
@@ -31,14 +34,14 @@ type Client struct {
 
 func New(baseURL string, timeout time.Duration) (*Client, error) {
 	if baseURL == "" {
-		return nil, fmt.Errorf("server URL is empty (set --server or RECALL_SERVER)")
+		return nil, fmt.Errorf("%w (set --server or RECALL_SERVER)", ErrEmptyURL)
 	}
 	u, err := url.Parse(baseURL)
 	if err != nil {
-		return nil, fmt.Errorf("invalid server URL: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrInvalidURL, err)
 	}
 	if u.Scheme == "" || u.Host == "" {
-		return nil, fmt.Errorf("server URL must include scheme and host (got %q)", baseURL)
+		return nil, fmt.Errorf("%w (got %q)", ErrMissingPart, baseURL)
 	}
 	return &Client{
 		baseURL: u,

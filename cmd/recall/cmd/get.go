@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"strings"
 	"time"
@@ -47,8 +46,8 @@ var getCmd = &cobra.Command{
 		}
 		defer body.Close()
 
-		if _, err := io.Copy(os.Stdout, body); err != nil {
-			return fmt.Errorf("copy content: %w", err)
+		if err := printDocument(os.Stdout, doc, body); err != nil {
+			return fmt.Errorf("print content: %w", err)
 		}
 		return nil
 	},

@@ -1,0 +1,69 @@
+# ============================================================
+# PersistentVolumeClaim — reserva 5GB de disco pro banco
+# Os dados ficam no local-path (SSD do Proxmox por padrão)
+# ============================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce       # só um pod por vez pode montar
+  resources:
+    requests:
+      storage: 5Gi        # 5GB é mais que suficiente pra metadados
+  storageClassName: local-path   # provisionador que o k3s traz built-in
+
+---
+# ============================================================
+# Deployment — roda o pod do PostgreSQL 16
+# ============================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+spec:
+  replicas: 1             # só 1 instância (banco não escala assim)
+  selector:
+    matchLabels:
+      app: postgres       # identifica quais pods pertencem a esse Deployment
+  template:
+    metadata:
+      labels:
+        app: postgres     # label que o Service vai usar pra encontrar o pod
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine    # mesma versão do teu docker-compose
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: "recall"
+            - name: POSTGRES_PASSWORD
+              value: "recall"          # depois movemos pra Secret
+            - name: POSTGRES_DB
+              value: "recall"
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data    # onde o Postgres guarda dados
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: postgres-pvc    # referencia o PVC que criamos acima
+
+---
+# ============================================================
+# Service — expõe o Postgres internamente no cluster
+# Outros pods acessam via: postgres-svc:5432
+# ============================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-svc
+spec:
+  selector:
+    app: postgres         # encontra pods com essa label
+  ports:
+    - port: 5432          # porta exposta no Service
+      targetPort: 5432    # porta do container

@@ -1,1 +1,12 @@
 .env
+.git
+.gitignore
+.claude
+.codex
+AGENTS.md
+README.md
+LICENSE
+storage/
+bin/
+docker-compose.yml
+

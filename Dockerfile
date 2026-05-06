@@ -1,27 +1,39 @@
 # syntax=docker/dockerfile:1
 
-FROM golang:1.19 AS build-stage
+# ============================================================
+# ESTÁGIO 1: Builder
+# ============================================================
 
-WORKDIR #Directory
+FROM golang:1.26.2-alpine AS builder
+
+RUN apk add --no-cache ca-certificates git
+
+WORKDIR /src
 
 COPY go.mod go.sum ./
-
 RUN go mod download
 
-COPY #all my code
+COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o sla /recall
+RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /bin/recall-server ./cmd/server
 
-FROM recall
 
-WORKDIR /
+# ============================================================
+# ESTÁGIO 2: Runtime
+# ============================================================
 
-COPY --from=build-stage /recall /recall
+FROM alpine:3.20
+
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /bin/recall-server /bin/recall-server 
+COPY --from=builder /src/internal/storage/schemas /migrations 
+
+RUN mkdir -p /data/storage
+
+ENV SERVER_HOST=0.0.0.0
+ENV SERVER_PORT=8080
+ENV STORAGE_PATH=/data/storage
 
 EXPOSE 8080
 
-USER nonroot:nonroot
-
-
-CMD ["/recall"]
-
+ENTRYPOINT ["/bin/recall-server"]

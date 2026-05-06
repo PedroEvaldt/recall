@@ -1,0 +1,104 @@
+# ============================================================
+# Secret — credenciais do banco de dados
+# ============================================================
+# Secret guarda dados sensíveis codificados em base64.
+# O Kubernetes injeta como variável de ambiente no pod,
+# separando segredos do código e dos manifests.
+# Em produção usaria algo como Vault ou Sealed Secrets.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: recall-secret
+type: Opaque
+stringData:
+  # stringData aceita texto puro — o k8s converte pra base64
+  # Note que o host é "postgres-svc" — o nome do Service que
+  # criamos. Dentro do cluster, Kubernetes resolve esse nome
+  # automaticamente via CoreDNS pro IP do pod do Postgres.
+  DB_URL: "postgres://recall:recall@postgres-svc:5432/recall?sslmode=disable"
+
+---
+# ============================================================
+# Deployment do recall server
+# ============================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recall-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: recall-server
+  template:
+    metadata:
+      labels:
+        app: recall-server
+    spec:
+      containers:
+        - name: recall-server
+          image: docker.io/library/recall-server:v1
+          # imagePullPolicy: Never diz pro k8s não tentar baixar
+          # a imagem de um registry externo — ela já foi importada
+          # manualmente via 'k3s ctr images import'
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: recall-secret
+                  key: DB_URL
+            - name: SERVER_HOST
+              value: "0.0.0.0"
+            - name: SERVER_PORT
+              value: "8080"
+            - name: STORAGE_PATH
+              value: "/data/storage"
+          # volumeMount conecta o volume ao filesystem do container
+          volumeMounts:
+            - name: recall-storage
+              mountPath: /data/storage    # caminho dentro do pod
+          # livenessProbe: k8s faz GET /health a cada 30s
+          # Se falhar 3x seguidas, mata o pod e recria
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          # readinessProbe: só envia tráfego pro pod quando
+          # o /health responder 200. Evita requests durante startup.
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 10
+      volumes:
+        - name: recall-storage
+          # hostPath monta um diretório do host (container LXC)
+          # dentro do pod. /mnt/datapool é o ZFS que montamos
+          # dos HDs em mirror. Tudo gravado aqui fica nos HDs
+          # com redundância automática.
+          hostPath:
+            path: /mnt/datapool/storage
+            type: DirectoryOrCreate    # cria se não existir
+
+---
+# ============================================================
+# Service — expõe o recall server dentro do cluster
+# ============================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: recall-svc
+spec:
+  type: NodePort          # expõe na rede do container LXC
+  selector:
+    app: recall-server
+  ports:
+    - port: 8080          # porta interna do cluster
+      targetPort: 8080    # porta do container
+      nodePort: 30080     # porta fixa acessível de fora do cluster

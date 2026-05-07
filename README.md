@@ -1,3 +1,5 @@
+[![status-badge](http://192.168.76.202:8000/api/badges/1/status.svg?events=push%2Ctag)](http://192.168.76.202:8000/repos/1)
+
 # recall
 
 > A self-hosted second brain for the terminal — store, search and retrieve your personal notes from anywhere.

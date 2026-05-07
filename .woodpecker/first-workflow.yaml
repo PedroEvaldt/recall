@@ -15,7 +15,6 @@ steps:
   # Build docker image
   - name: build
     image: woodpecker/plugin-docker-buildx
-    privileged: true
     settings: 
       auto_tag: true
       repo: recall-server

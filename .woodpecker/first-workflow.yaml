@@ -14,9 +14,11 @@ steps:
 
   # Build docker image
   - name: build
-    image: plugins/docker
+    image: woodpecker/plugin-docker-buildx
+    privileged: true
     settings: 
+      auto_tag: true
       repo: recall-server
-      tags: latest
       dry_run: true # just build, do not push it yet
+      dockerfile: Dockerfile
 

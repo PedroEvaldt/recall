@@ -41,7 +41,7 @@ type CreateDocumentParams struct {
 	Slug        string
 	Filename    string
 	MimeType    string
-	SizeBytes   int32
+	SizeBytes   int64
 	StoragePath string
 	Tags        []string
 }

@@ -1,0 +1,22 @@
+# Recall pipeline
+
+when:
+  - event: push
+    branch: main
+
+
+steps:
+  # Run tests
+  - name: test
+    image: golang:1.26.2-alpine
+    commands:
+      - go test ./...
+
+  # Build docker image
+  - name: build
+    image: plugins/docker
+    settings: 
+      repo: recall-server
+      tags: latest
+      dry_run: true # just build, do not push it yet
+

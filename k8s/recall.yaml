@@ -37,11 +37,7 @@ spec:
     spec:
       containers:
         - name: recall-server
-          image: docker.io/library/recall-server:v1
-          # imagePullPolicy: Never diz pro k8s não tentar baixar
-          # a imagem de um registry externo — ela já foi importada
-          # manualmente via 'k3s ctr images import'
-          imagePullPolicy: Never
+          image: 192.168.76.202:3000/pedro/recall-server
           ports:
             - containerPort: 8080
           env:

@@ -1,0 +1,16 @@
+
+depends_on:
+  - lint
+  - test
+  - security
+  - build
+
+when:
+  - event: push
+    branch: main
+
+steps:
+  - name: deploy
+    image: bitnami/kubectl
+    commands:
+      - kubectl set image deployment/recall-server recall-server=192.168.76.202:3000/pedro/recall-server:${CI_COMMIT_SHA:0:8} --server=https://192.168.76.201:6443 --insecure-skip-tls-verify=true --token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)

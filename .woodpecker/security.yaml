@@ -1,0 +1,11 @@
+when:
+  - event: push
+    branch: main
+
+steps:
+  - name: gosec
+    image: golang:1.26.2-alpine
+    commands:
+      - go install github.com/securego/gosec/v2/cmd/gosec@latest
+      - gosec -quiet ./...
+

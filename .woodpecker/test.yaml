@@ -1,0 +1,9 @@
+when:
+  - event: push
+    branch: main
+
+steps:
+  - name: test
+    image: golang:1.26.2-alpine
+    commands:
+      - go test -race -cover ./...

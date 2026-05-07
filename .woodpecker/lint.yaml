@@ -1,0 +1,14 @@
+when: 
+  - event: push
+    branch: main
+
+steps:
+  - name: fmt
+    image: golang:1.26.2-alpine
+    commands:
+      - test -z $(go fmt ./...)
+  - name: staticcheck
+    image: golang:1.26.2-alpine
+    commands:
+      - go install honnef.co/go/tools/cmd/staticcheck@latest
+      - staticcheck ./...

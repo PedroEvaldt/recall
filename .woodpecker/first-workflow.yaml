@@ -1,23 +1,26 @@
-# Recall pipeline
-
 when:
   - event: push
     branch: main
 
-
 steps:
-  # Run tests
   - name: test
     image: golang:1.26.2-alpine
     commands:
       - go test ./...
 
-  # Build docker image
-  - name: build
+  - name: build-and-push
     image: woodpeckerci/plugin-docker-buildx
-    settings: 
-      auto_tag: true
-      repo: recall-server
-      dry_run: true # just build, do not push it yet
+    settings:
+      repo: 192.168.76.202:3000/pedro/recall-server
+      registry: 192.168.76.202:3000
+      tags: latest,${CI_COMMIT_SHA:0:8}
       dockerfile: Dockerfile
+      username:
+        from_secret: REGISTRY_USER
+      password:
+        from_secret: REGISTRY_PASS
 
+  - name: deploy
+    image: bitnami/kubectl
+    commands:
+      - kubectl set image deployment/recall-server recall-server=192.168.76.202:3000/pedro/recall-server:${CI_COMMIT_SHA:0:8} --server=https://192.168.76.201:6443 --insecure-skip-tls-verify=true --token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)

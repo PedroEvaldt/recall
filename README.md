@@ -1,4 +1,4 @@
-[![status-badge](http://192.168.76.202:8000/api/badges/1/status.svg?events=push%2Ctag)](http://192.168.76.202:8000/repos/1)
+![status-badge](http://192.168.76.202:8000/api/badges/1/status.svg)
 
 # recall
 

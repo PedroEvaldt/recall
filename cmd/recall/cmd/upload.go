@@ -33,7 +33,7 @@ var uploadCmd = &cobra.Command{
 			title = strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
 		}
 
-		file, err := os.Open(path)
+		file, err := os.Open(path) // #nosec G304 -- path provided by CLI user, runs with user's own privileges
 		if err != nil {
 			return fmt.Errorf("open %s: %w", path, err)
 		}

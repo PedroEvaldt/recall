@@ -15,9 +15,10 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const maxUploadSize = 50 << 20 // 50 MiB
+const maxUploadSize = 1000 << 20 // 1Gb
 
 func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
 	err := r.ParseMultipartForm(maxUploadSize)
 	if err != nil {
 		log.Printf("multipart form error: %v", err)
@@ -57,14 +58,14 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 		Slug:        docSlug,
 		Filename:    filename,
 		MimeType:    mimeType,
-		SizeBytes:   int32(size),
+		SizeBytes:   size,
 		StoragePath: path,
 		Tags:        tags,
 	})
 	if err != nil {
 		log.Printf("create document: %v", err)
 		if delErr := h.fileStore.DeleteFile(path); delErr != nil {
-			log.Printf("failed to cleanup orphan file %s: %v", path, delErr)
+			log.Printf("failed to cleanup orphan file %q: %v", path, delErr)
 		}
 		respondWithError(w, http.StatusInternalServerError, "failed to save document")
 		return

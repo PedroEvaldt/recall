@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/google/uuid"
@@ -14,16 +15,28 @@ import (
 
 // FileStore persiste arquivos no disco local em uma estrutura particionada por
 // prefixo do UUID (ex: <baseDir>/ab/cdef.../file.pdf), evitando diretórios com
-// dezenas de milhares de entradas.
+// dezenas de milhares de entradas. As operações de IO ficam confinadas ao
+// baseDir via *os.Root: paths com ".." ou symlinks apontando pra fora retornam
+// erro em vez de escapar.
 type FileStore struct {
-	baseDir string
+	root *os.Root
 }
 
+var validExt = regexp.MustCompile(`^\.[a-zA-Z0-9]{1,16}$`)
+
 func NewFileStore(baseDir string) (*FileStore, error) {
-	if err := os.MkdirAll(baseDir, 0o755); err != nil {
+	if err := os.MkdirAll(baseDir, 0o750); err != nil {
 		return nil, fmt.Errorf("create base dir: %w", err)
 	}
-	return &FileStore{baseDir: baseDir}, nil
+	root, err := os.OpenRoot(baseDir)
+	if err != nil {
+		return nil, fmt.Errorf("open base dir as root: %w", err)
+	}
+	return &FileStore{root: root}, nil
+}
+
+func (f *FileStore) Close() error {
+	return f.root.Close()
 }
 
 // SaveFile escreve o conteúdo em <baseDir>/<2 chars do UUID>/<resto>.<ext> e
@@ -33,16 +46,19 @@ func (f *FileStore) SaveFile(id uuid.UUID, extension string, src io.Reader) (str
 		return "", 0, errors.New("extension must start with '.'")
 	}
 
+	if !validExt.MatchString(extension) {
+		return "", 0, errors.New("invalid extension")
+	}
+
 	idStr := id.String()
-	subDir := filepath.Join(f.baseDir, idStr[:2])
-	if err := os.MkdirAll(subDir, 0o755); err != nil {
+	subDir := idStr[:2]
+	if err := f.root.MkdirAll(subDir, 0o750); err != nil {
 		return "", 0, fmt.Errorf("create sub dir: %w", err)
 	}
 
-	relPath := filepath.Join(idStr[:2], idStr[2:]+extension)
-	absPath := filepath.Join(f.baseDir, relPath)
+	relPath := filepath.Join(subDir, idStr[2:]+extension)
 
-	dst, err := os.Create(absPath)
+	dst, err := f.root.Create(relPath)
 	if err != nil {
 		return "", 0, fmt.Errorf("create file: %w", err)
 	}
@@ -50,11 +66,11 @@ func (f *FileStore) SaveFile(id uuid.UUID, extension string, src io.Reader) (str
 	size, copyErr := io.Copy(dst, src)
 	closeErr := dst.Close()
 	if copyErr != nil {
-		_ = os.Remove(absPath)
+		_ = f.root.Remove(relPath)
 		return "", 0, fmt.Errorf("write file: %w", copyErr)
 	}
 	if closeErr != nil {
-		_ = os.Remove(absPath)
+		_ = f.root.Remove(relPath)
 		return "", 0, fmt.Errorf("close file: %w", closeErr)
 	}
 
@@ -62,14 +78,14 @@ func (f *FileStore) SaveFile(id uuid.UUID, extension string, src io.Reader) (str
 }
 
 func (f *FileStore) DeleteFile(relPath string) error {
-	if err := os.Remove(filepath.Join(f.baseDir, relPath)); err != nil {
+	if err := f.root.Remove(relPath); err != nil {
 		return fmt.Errorf("delete file: %w", err)
 	}
 	return nil
 }
 
 func (f *FileStore) OpenFile(path string) (io.ReadSeekCloser, error) {
-	file, err := os.Open(filepath.Join(f.baseDir, path))
+	file, err := f.root.Open(path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil, fmt.Errorf("file does not exist: %w", err)
@@ -79,8 +95,7 @@ func (f *FileStore) OpenFile(path string) (io.ReadSeekCloser, error) {
 	return file, nil
 }
 
-// Exists reports whether the file at relPath is present on disk.
 func (f *FileStore) Exists(relPath string) bool {
-	_, err := os.Stat(filepath.Join(f.baseDir, relPath))
+	_, err := f.root.Stat(relPath)
 	return err == nil
 }

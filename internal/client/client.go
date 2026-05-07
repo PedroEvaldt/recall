@@ -136,7 +136,10 @@ func (c *Client) PostDocument(ctx context.Context, title, filename string, body 
 		return nil, fmt.Errorf("copy file: %w", err)
 	}
 
-	writer.Close()
+	err = writer.Close()
+	if err != nil {
+		return nil, fmt.Errorf("close multipart writer: %w", err)
+	}
 
 	u := c.baseURL.JoinPath("/documents")
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), &buf)

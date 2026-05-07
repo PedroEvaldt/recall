@@ -90,7 +90,7 @@ type GetDocumentRow struct {
 	Filename    string
 	MimeType    string
 	StoragePath string
-	SizeBytes   int32
+	SizeBytes   int64
 	Tags        []string
 	CreatedAt   pgtype.Timestamp
 }

@@ -14,7 +14,7 @@ type Document struct {
 	Slug        string
 	Filename    string
 	MimeType    string
-	SizeBytes   int32
+	SizeBytes   int64
 	StoragePath string
 	CreatedAt   pgtype.Timestamp
 	UpdatedAt   pgtype.Timestamp

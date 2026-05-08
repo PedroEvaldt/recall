@@ -4,8 +4,6 @@ when:
 
 steps:
   - name: gosec
-    image: golang:1.26.2-alpine
+    image: securego/gosec:2.24.6
     commands:
-      - go install github.com/securego/gosec/v2/cmd/gosec@latest
       - gosec -quiet ./...
-

@@ -10,5 +10,5 @@ steps:
   - name: staticcheck
     image: golang:1.26.2-alpine
     commands:
-      - go install honnef.co/go/tools/cmd/staticcheck@latest
+      - go install honnef.co/go/tools/cmd/staticcheck@2026.1
       - staticcheck ./...

@@ -37,7 +37,8 @@ spec:
     spec:
       containers:
         - name: recall-server
-          image: 192.168.76.202:3000/pedro/recall-server
+          image: 192.168.76.202:3000/pedro/recall-server:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           env:

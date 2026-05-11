@@ -7,7 +7,7 @@ when:
 
 steps:
   - name: goose-up
-    image: ghcr.io/kukymbr/goose-docker-cmd:v3.27.1 
+    image: ghcr.io/kukymbr/goose-docker:3.27.1 
     environment:
       GOOSE_URL:
         from_secret: GOOSE_URL

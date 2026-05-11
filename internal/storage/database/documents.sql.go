@@ -33,7 +33,7 @@ VALUES
     $7::text[]
   )
 RETURNING
-  id, title, slug, filename, mime_type, size_bytes, storage_path, created_at, updated_at, tags
+  id, title, slug, filename, mime_type, size_bytes, storage_path, created_at, updated_at, tags, deleted_at
 `
 
 type CreateDocumentParams struct {
@@ -41,7 +41,7 @@ type CreateDocumentParams struct {
 	Slug        string
 	Filename    string
 	MimeType    string
-	SizeBytes   int64
+	SizeBytes   int32
 	StoragePath string
 	Tags        []string
 }
@@ -68,6 +68,7 @@ func (q *Queries) CreateDocument(ctx context.Context, arg CreateDocumentParams) 
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Tags,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -85,6 +86,7 @@ FROM
   documents
 WHERE
   id = $1::uuid
+  AND deleted_at IS NULL
 `
 
 type GetDocumentRow struct {
@@ -114,21 +116,24 @@ func (q *Queries) GetDocument(ctx context.Context, id pgtype.UUID) (GetDocumentR
 
 const listDocuments = `-- name: ListDocuments :many
 SELECT
-  id, title, slug, filename, mime_type, size_bytes, storage_path, created_at, updated_at, tags
+  id, title, slug, filename, mime_type, size_bytes, storage_path, created_at, updated_at, tags, deleted_at
 FROM
   documents
 WHERE
   (
-    title ILIKE '%' || $1::text || '%'
+    (
+      title ILIKE '%' || $1::text || '%'
+    )
+    OR EXISTS (
+      SELECT
+        1
+      FROM
+        unnest(tags) AS t
+      WHERE
+        t ILIKE '%' || $1::text || '%'
+    )
   )
-  OR EXISTS (
-    SELECT
-      1
-    FROM
-      unnest(tags) AS t
-    WHERE
-      t ILIKE '%' || $1::text || '%'
-  )
+  AND deleted_at IS NULL
 ORDER BY
   created_at DESC
 `
@@ -153,6 +158,7 @@ func (q *Queries) ListDocuments(ctx context.Context, searchTerm string) ([]Docum
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Tags,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}

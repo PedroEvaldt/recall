@@ -29,16 +29,19 @@ FROM
   documents
 WHERE
   (
-    title ILIKE '%' || sqlc.arg (search_term)::text || '%'
+    (
+      title ILIKE '%' || sqlc.arg (search_term)::text || '%'
+    )
+    OR EXISTS (
+      SELECT
+        1
+      FROM
+        unnest(tags) AS t
+      WHERE
+        t ILIKE '%' || sqlc.arg (search_term)::text || '%'
+    )
   )
-  OR EXISTS (
-    SELECT
-      1
-    FROM
-      unnest(tags) AS t
-    WHERE
-      t ILIKE '%' || sqlc.arg (search_term)::text || '%'
-  )
+  AND deleted_at IS NULL
 ORDER BY
   created_at DESC;
 
@@ -54,5 +57,6 @@ SELECT
 FROM
   documents
 WHERE
-  id = sqlc.arg (id)::uuid;
+  id = sqlc.arg (id)::uuid
+  AND deleted_at IS NULL;
 

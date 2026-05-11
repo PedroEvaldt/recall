@@ -19,4 +19,5 @@ type Document struct {
 	CreatedAt   pgtype.Timestamp
 	UpdatedAt   pgtype.Timestamp
 	Tags        []string
+	DeletedAt   pgtype.Timestamp
 }

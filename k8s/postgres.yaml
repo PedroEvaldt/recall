@@ -1,4 +1,27 @@
 # ============================================================
+# Secret — credenciais do banco de dados
+# ============================================================
+# Secret guarda dados sensíveis codificados em base64.
+# O Kubernetes injeta como variável de ambiente no pod,
+# separando segredos do código e dos manifests.
+# Em produção usaria algo como Vault ou Sealed Secrets.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+type: Opaque
+stringData:
+  # stringData aceita texto puro — o k8s converte pra base64
+  # Note que o host é "postgres-svc" — o nome do Service que
+  # criamos. Dentro do cluster, Kubernetes resolve esse nome
+  # automaticamente via CoreDNS pro IP do pod do Postgres.
+  POSTGRES_USER: "recall"
+  POSTGRES_PASSWORD: "recall"
+  POSTGRES_DB: "recall"
+
+---
+
+# ============================================================
 # PersistentVolumeClaim — reserva 5GB de disco pro banco
 # Os dados ficam no local-path (SSD do Proxmox por padrão)
 # ============================================================
@@ -39,11 +62,11 @@ spec:
             - containerPort: 5432
           env:
             - name: POSTGRES_USER
-              value: "recall"
+              value: POSTGRES_USER
             - name: POSTGRES_PASSWORD
-              value: "recall"          # depois movemos pra Secret
+              value: POSTGRES_PASSWORD         
             - name: POSTGRES_DB
-              value: "recall"
+              value: POSTGRES_DB
           volumeMounts:
             - name: postgres-data
               mountPath: /var/lib/postgresql/data    # onde o Postgres guarda dados

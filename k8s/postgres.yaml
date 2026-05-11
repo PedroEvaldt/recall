@@ -85,10 +85,8 @@ kind: Service
 metadata:
   name: postgres-svc
 spec:
-  type: NodePort
   selector:
     app: postgres         # encontra pods com essa label
   ports:
     - port: 5432          # porta exposta no Service
       targetPort: 5432    # porta do container
-      nodePort: 30432 

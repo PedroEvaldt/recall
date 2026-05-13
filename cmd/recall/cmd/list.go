@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/PedroEvaldt/recall/internal/client"
+	"github.com/PedroEvaldt/recall/internal/tui/doclist"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -21,7 +22,6 @@ var listCmd = &cobra.Command{
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		serverURL := viper.GetString("server")
-
 		query := strings.Join(args, " ")
 
 		c, err := client.New(serverURL, 30*time.Second)
@@ -29,29 +29,20 @@ var listCmd = &cobra.Command{
 			return fmt.Errorf("create client: %w", err)
 		}
 
-		docs, err := c.ListDocuments(cmd.Context(), query)
+		model := doclist.New(c, query, cmd.Context())
+		finalModel, err := tea.NewProgram(model).Run()
 		if err != nil {
-			return fmt.Errorf("list documents: %w", err)
-		}
-		if len(docs) == 0 {
-			printNoResults(os.Stderr, query)
-			return nil
-		}
-		if len(docs) > limit {
-			docs = docs[:limit]
+			return fmt.Errorf("tui: %w", err)
 		}
 
-		for i, doc := range docs {
-			if len(doc.Tags) > 0 {
-				if _, err := fmt.Fprintf(os.Stdout, "%d.\nId: %v\nTitle: %s\nTags: %s\nCreated at: %v\n", (i + 1), doc.ID, doc.Title, strings.Join(doc.Tags, ", "), doc.CreatedAt); err != nil {
-					return fmt.Errorf("copy content: %w", err)
-				}
-			} else {
-				if _, err := fmt.Fprintf(os.Stdout, "%d.\nId: %v\nTitle: %s\nCreated at: %v\n", (i + 1), doc.ID, doc.Title, doc.CreatedAt); err != nil {
-					return fmt.Errorf("copy content: %w", err)
-				}
-			}
+		m, ok := finalModel.(doclist.Model)
+		if !ok {
+			return fmt.Errorf("unexpected tui model type: %T", finalModel)
 		}
+		if m.Aborted || m.Selected == nil {
+			return nil
+		}
+
 		return nil
 	},
 }

@@ -1,4 +1,4 @@
--- name: CreateDocument :one 
+-- name: CreateDocument :one
 INSERT INTO
   documents (
     title,
@@ -15,7 +15,7 @@ VALUES
     sqlc.arg (slug)::text,
     sqlc.arg (filename)::text,
     sqlc.arg (mime_type)::text,
-    sqlc.arg (size_bytes)::int,
+    sqlc.arg (size_bytes)::bigint,
     sqlc.arg (storage_path)::text,
     sqlc.arg (tags)::text[]
   )

@@ -38,13 +38,10 @@ func (d docItem) FilterValue() string { return d.doc.Title }
 type Model struct {
 	Aborted  bool
 	query    string
-	limit    int
-	err      error
 	ctx      context.Context
 	list     list.Model
 	c        *client.Client
 	Selected *api.DocumentResponse
-	docs     []api.DocumentResponse
 }
 
 func New(c *client.Client, query string, ctx context.Context) Model {

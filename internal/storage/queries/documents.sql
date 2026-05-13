@@ -44,6 +44,7 @@ ORDER BY
 
 -- name: GetDocument :one
 SELECT
+  title,
   filename,
   mime_type,
   storage_path,

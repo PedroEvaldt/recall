@@ -74,6 +74,7 @@ func (q *Queries) CreateDocument(ctx context.Context, arg CreateDocumentParams) 
 
 const getDocument = `-- name: GetDocument :one
 SELECT
+  title,
   filename,
   mime_type,
   storage_path,
@@ -87,6 +88,7 @@ WHERE
 `
 
 type GetDocumentRow struct {
+	Title       string
 	Filename    string
 	MimeType    string
 	StoragePath string
@@ -99,6 +101,7 @@ func (q *Queries) GetDocument(ctx context.Context, id pgtype.UUID) (GetDocumentR
 	row := q.db.QueryRow(ctx, getDocument, id)
 	var i GetDocumentRow
 	err := row.Scan(
+		&i.Title,
 		&i.Filename,
 		&i.MimeType,
 		&i.StoragePath,

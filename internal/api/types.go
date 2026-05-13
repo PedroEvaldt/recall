@@ -14,3 +14,10 @@ type DocumentResponse struct {
 	Tags      []string  `json:"tags"`
 	CreatedAt time.Time `json:"created_at"`
 }
+
+type MetaResponse struct {
+	Title     string    `json:"title"`
+	MimeType  string    `json:"mime_type"`
+	Tags      []string  `json:"tags"`
+	CreatedAt time.Time `json:"created_at"`
+}

@@ -85,8 +85,7 @@ func (c *Client) ListDocuments(ctx context.Context, query string) ([]api.Documen
 }
 
 func (c *Client) GetContent(ctx context.Context, id uuid.UUID) (io.ReadCloser, error) {
-	// TODO fazer {id}/content para pegar so o conteudo
-	u := c.baseURL.JoinPath("/documents", id.String())
+	u := c.baseURL.JoinPath("/documents", id.String(), "/content")
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
@@ -110,6 +109,36 @@ func (c *Client) GetContent(ctx context.Context, id uuid.UUID) (io.ReadCloser, e
 	}
 
 	return resp.Body, nil
+}
+
+func (c *Client) GetMeta(ctx context.Context, id uuid.UUID) (api.MetaResponse, error) {
+	u := c.baseURL.JoinPath("/documents", id.String())
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return api.MetaResponse{}, fmt.Errorf("create request: %w", err)
+	}
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return api.MetaResponse{}, fmt.Errorf("do request: %w", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		defer resp.Body.Close()
+		if resp.StatusCode == http.StatusNotFound {
+			return api.MetaResponse{}, fmt.Errorf("%w: %s", ErrNotFound, id)
+		}
+		var errResp struct {
+			Error string `json:"error"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&errResp); err == nil && errResp.Error != "" {
+			return api.MetaResponse{}, fmt.Errorf("server returned %s: %s", resp.Status, errResp.Error)
+		}
+		return api.MetaResponse{}, fmt.Errorf("server returned %s", resp.Status)
+	}
+	var docMeta api.MetaResponse
+	if err := json.NewDecoder(resp.Body).Decode(&docMeta); err != nil {
+		return api.MetaResponse{}, fmt.Errorf("decode response: %w", err)
+	}
+	return docMeta, nil
 }
 
 func (c *Client) PostDocument(ctx context.Context, title, filename string, body io.Reader, tags []string) (*api.DocumentResponse, error) {

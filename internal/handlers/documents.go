@@ -153,6 +153,33 @@ func (h *Handler) GetDocument(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, document.Filename, document.CreatedAt.Time, file)
 }
 
+func (h *Handler) GetDocumentMeta(w http.ResponseWriter, r *http.Request) {
+	docID := r.PathValue("id")
+	docUUID, err := uuid.Parse(docID)
+	if err != nil {
+		log.Printf("transform id to uuid: %v", err)
+		respondWithError(w, http.StatusBadRequest, "could not transform this id to uuid")
+		return
+	}
+	pgID := pgtype.UUID{Bytes: docUUID, Valid: true}
+	document, err := h.queries.GetDocument(r.Context(), pgID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			respondWithError(w, http.StatusNotFound, "uuid does not exist")
+			return
+		}
+		log.Printf("get document: %v", err)
+		respondWithError(w, http.StatusInternalServerError, "failed to get document")
+		return
+	}
+	respondWithJSON(w, http.StatusOK, api.MetaResponse{
+		Title:     document.Title,
+		MimeType:  document.MimeType,
+		Tags:      document.Tags,
+		CreatedAt: document.CreatedAt.Time,
+	})
+}
+
 func slugify(s string) string {
 	s = strings.ToLower(s)
 	s = strings.ReplaceAll(s, " ", "-")

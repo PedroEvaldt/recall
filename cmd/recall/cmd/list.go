@@ -12,18 +12,31 @@ import (
 	"github.com/spf13/viper"
 )
 
-var limit int
+var (
+	limit   int
+	listAll bool
+)
 
 var listCmd = &cobra.Command{
 	Use:   "list query [-l limit]",
 	Short: "List documents matching a query",
 	Example: `	recall list go struct
 	recall list go struct -l 5`,
-	Args: cobra.MinimumNArgs(1),
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if listAll && len(args) > 0 {
+			return fmt.Errorf("--all cannot be combined with a query")
+		}
+		if !listAll && len(args) == 0 {
+			return fmt.Errorf("either provide a query or use --all")
+		}
+		return nil
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		var query string
 		serverURL := viper.GetString("server")
-		query := strings.Join(args, " ")
-
+		if !listAll {
+			query = strings.Join(args, " ")
+		}
 		c, err := client.New(serverURL, 30*time.Second)
 		if err != nil {
 			return fmt.Errorf("create client: %w", err)
@@ -55,5 +68,12 @@ func init() {
 		"l",
 		10,
 		"max results",
+	)
+	listCmd.Flags().BoolVarP(
+		&listAll,
+		"all",
+		"a",
+		false,
+		"list all documents",
 	)
 }

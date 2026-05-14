@@ -86,16 +86,26 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) ListDocuments(w http.ResponseWriter, r *http.Request) {
+	var (
+		documents []database.Document
+		err       error
+	)
+
 	searchTerm := r.URL.Query().Get("q")
 	if searchTerm == "" {
-		respondWithError(w, http.StatusBadRequest, "could not find query")
-		return
-	}
-	documents, err := h.queries.ListDocuments(r.Context(), searchTerm)
-	if err != nil {
-		log.Printf("list documents: %v", err)
-		respondWithError(w, http.StatusInternalServerError, "failed to list documents")
-		return
+		documents, err = h.queries.ListAllDocuments(r.Context())
+		if err != nil {
+			log.Printf("list all documents: %v", err)
+			respondWithError(w, http.StatusInternalServerError, "failed to list all documents")
+			return
+		}
+	} else {
+		documents, err = h.queries.ListDocuments(r.Context(), searchTerm)
+		if err != nil {
+			log.Printf("list documents: %v", err)
+			respondWithError(w, http.StatusInternalServerError, "failed to list documents")
+			return
+		}
 	}
 	response := make([]api.DocumentResponse, 0, len(documents))
 	for _, document := range documents {

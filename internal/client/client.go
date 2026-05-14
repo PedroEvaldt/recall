@@ -54,7 +54,9 @@ func New(baseURL string, timeout time.Duration) (*Client, error) {
 func (c *Client) ListDocuments(ctx context.Context, query string) ([]api.DocumentResponse, error) {
 	u := c.baseURL.JoinPath("/documents")
 	q := u.Query()
-	q.Set("q", query)
+	if query != "" {
+		q.Set("q", query)
+	}
 	u.RawQuery = q.Encode()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)

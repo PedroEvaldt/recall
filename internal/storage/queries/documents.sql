@@ -45,6 +45,16 @@ WHERE
 ORDER BY
   created_at DESC;
 
+-- name: ListAllDocuments :many
+SELECT
+  *
+FROM
+  documents
+WHERE
+  deleted_at IS NULL
+ORDER BY
+  created_at DESC;
+
 -- name: GetDocument :one
 SELECT
   title,

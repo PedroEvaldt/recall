@@ -114,6 +114,49 @@ func (q *Queries) GetDocument(ctx context.Context, id pgtype.UUID) (GetDocumentR
 	return i, err
 }
 
+const listAllDocuments = `-- name: ListAllDocuments :many
+SELECT
+  id, title, slug, filename, mime_type, size_bytes, storage_path, created_at, updated_at, tags, deleted_at
+FROM
+  documents
+WHERE
+  deleted_at IS NULL
+ORDER BY
+  created_at DESC
+`
+
+func (q *Queries) ListAllDocuments(ctx context.Context) ([]Document, error) {
+	rows, err := q.db.Query(ctx, listAllDocuments)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Document
+	for rows.Next() {
+		var i Document
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Slug,
+			&i.Filename,
+			&i.MimeType,
+			&i.SizeBytes,
+			&i.StoragePath,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Tags,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listDocuments = `-- name: ListDocuments :many
 SELECT
   id, title, slug, filename, mime_type, size_bytes, storage_path, created_at, updated_at, tags, deleted_at

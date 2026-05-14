@@ -39,4 +39,5 @@ AGENTS.md
 # Storage
 /storage
 
-HOMELAB_CONTEXT.md
+# Dir for execution
+bin

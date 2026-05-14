@@ -123,10 +123,12 @@ WHERE
   deleted_at IS NULL
 ORDER BY
   created_at DESC
+LIMIT
+  $1
 `
 
-func (q *Queries) ListAllDocuments(ctx context.Context) ([]Document, error) {
-	rows, err := q.db.Query(ctx, listAllDocuments)
+func (q *Queries) ListAllDocuments(ctx context.Context, limit pgtype.Int4) ([]Document, error) {
+	rows, err := q.db.Query(ctx, listAllDocuments, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -179,10 +181,17 @@ WHERE
   AND deleted_at IS NULL
 ORDER BY
   created_at DESC
+LIMIT
+  $2
 `
 
-func (q *Queries) ListDocuments(ctx context.Context, searchTerm string) ([]Document, error) {
-	rows, err := q.db.Query(ctx, listDocuments, searchTerm)
+type ListDocumentsParams struct {
+	SearchTerm string
+	Limit      pgtype.Int4
+}
+
+func (q *Queries) ListDocuments(ctx context.Context, arg ListDocumentsParams) ([]Document, error) {
+	rows, err := q.db.Query(ctx, listDocuments, arg.SearchTerm, arg.Limit)
 	if err != nil {
 		return nil, err
 	}

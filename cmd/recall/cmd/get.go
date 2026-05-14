@@ -34,7 +34,7 @@ var getCmd = &cobra.Command{
 
 		hasDarkBg := lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
 
-		model := doclist.New(c, query, cmd.Context())
+		model := doclist.New(c, query, "", cmd.Context())
 		finalModel, err := tea.NewProgram(model).Run()
 		if err != nil {
 			return fmt.Errorf("tui: %w", err)

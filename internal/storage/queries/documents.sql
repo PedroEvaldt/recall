@@ -43,7 +43,9 @@ WHERE
   )
   AND deleted_at IS NULL
 ORDER BY
-  created_at DESC;
+  created_at DESC
+LIMIT
+  sqlc.narg ('limit');
 
 -- name: ListAllDocuments :many
 SELECT
@@ -53,7 +55,9 @@ FROM
 WHERE
   deleted_at IS NULL
 ORDER BY
-  created_at DESC;
+  created_at DESC
+LIMIT
+  sqlc.narg ('limit');
 
 -- name: GetDocument :one
 SELECT

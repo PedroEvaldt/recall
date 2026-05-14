@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -32,7 +33,10 @@ var listCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var query string
+		var (
+			query    string
+			limitStr string
+		)
 		serverURL := viper.GetString("server")
 		if !listAll {
 			query = strings.Join(args, " ")
@@ -42,7 +46,11 @@ var listCmd = &cobra.Command{
 			return fmt.Errorf("create client: %w", err)
 		}
 
-		model := doclist.New(c, query, cmd.Context())
+		if limit != 0 {
+			limitStr = strconv.Itoa(limit)
+		}
+
+		model := doclist.New(c, query, limitStr, cmd.Context())
 		finalModel, err := tea.NewProgram(model).Run()
 		if err != nil {
 			return fmt.Errorf("tui: %w", err)
@@ -66,7 +74,7 @@ func init() {
 		&limit,
 		"limit",
 		"l",
-		10,
+		0,
 		"max results",
 	)
 	listCmd.Flags().BoolVarP(

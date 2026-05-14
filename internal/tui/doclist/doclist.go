@@ -38,13 +38,14 @@ func (d docItem) FilterValue() string { return d.doc.Title }
 type Model struct {
 	Aborted  bool
 	query    string
+	limit    string
 	ctx      context.Context
 	list     list.Model
 	c        *client.Client
 	Selected *api.DocumentResponse
 }
 
-func New(c *client.Client, query string, ctx context.Context) Model {
+func New(c *client.Client, query, limit string, ctx context.Context) Model {
 	delegate := list.NewDefaultDelegate()
 	l := list.New([]list.Item{}, delegate, 0, 0)
 	l.Title = "Buscando: " + query
@@ -53,6 +54,7 @@ func New(c *client.Client, query string, ctx context.Context) Model {
 		list:  l,
 		c:     c,
 		query: query,
+		limit: limit,
 	}
 }
 
@@ -61,7 +63,7 @@ func (m Model) Init() tea.Cmd {
 }
 
 func (m Model) fetchDocs() tea.Msg {
-	docs, err := m.c.ListDocuments(m.ctx, m.query)
+	docs, err := m.c.ListDocuments(m.ctx, m.query, m.limit)
 	if err != nil {
 		return errMsg{err}
 	}

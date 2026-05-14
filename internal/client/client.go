@@ -51,11 +51,14 @@ func New(baseURL string, timeout time.Duration) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) ListDocuments(ctx context.Context, query string) ([]api.DocumentResponse, error) {
+func (c *Client) ListDocuments(ctx context.Context, query, limit string) ([]api.DocumentResponse, error) {
 	u := c.baseURL.JoinPath("/documents")
 	q := u.Query()
 	if query != "" {
 		q.Set("q", query)
+	}
+	if limit != "" {
+		q.Set("limit", limit)
 	}
 	u.RawQuery = q.Encode()
 

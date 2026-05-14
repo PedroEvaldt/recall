@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/PedroEvaldt/recall/internal/api"
@@ -89,18 +90,34 @@ func (h *Handler) ListDocuments(w http.ResponseWriter, r *http.Request) {
 	var (
 		documents []database.Document
 		err       error
+		limit     pgtype.Int4
 	)
 
 	searchTerm := r.URL.Query().Get("q")
+	limitTerm := r.URL.Query().Get("limit")
+
+	if limitTerm != "" {
+		limitInt32, err := strconv.Atoi(limitTerm)
+		limit = pgtype.Int4{
+			Int32: int32(limitInt32),
+			Valid: true,
+		}
+		if err != nil {
+			log.Printf("convert limit to int: %v", err)
+			respondWithError(w, http.StatusBadRequest, "failed to convert limit to int")
+			return
+		}
+	}
+
 	if searchTerm == "" {
-		documents, err = h.queries.ListAllDocuments(r.Context())
+		documents, err = h.queries.ListAllDocuments(r.Context(), limit)
 		if err != nil {
 			log.Printf("list all documents: %v", err)
 			respondWithError(w, http.StatusInternalServerError, "failed to list all documents")
 			return
 		}
 	} else {
-		documents, err = h.queries.ListDocuments(r.Context(), searchTerm)
+		documents, err = h.queries.ListDocuments(r.Context(), database.ListDocumentsParams{SearchTerm: searchTerm, Limit: limit})
 		if err != nil {
 			log.Printf("list documents: %v", err)
 			respondWithError(w, http.StatusInternalServerError, "failed to list documents")

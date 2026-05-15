@@ -1,23 +1,18 @@
 # ============================================================
-# Secret — credenciais do banco de dados
+# Secret — credenciais sensíveis (DB_URL e AUTH_TOKEN)
 # ============================================================
-# Secret guarda dados sensíveis codificados em base64.
-# O Kubernetes injeta como variável de ambiente no pod,
-# separando segredos do código e dos manifests.
-# Em produção usaria algo como Vault ou Sealed Secrets.
-apiVersion: v1
-kind: Secret
-metadata:
-  name: recall-secret
-type: Opaque
-stringData:
-  # stringData aceita texto puro — o k8s converte pra base64
-  # Note que o host é "postgres-svc" — o nome do Service que
-  # criamos. Dentro do cluster, Kubernetes resolve esse nome
-  # automaticamente via CoreDNS pro IP do pod do Postgres.
-  DB_URL: "postgres://recall:recall@postgres-svc:5432/recall?sslmode=disable"
+# O Secret "recall-secret" NÃO é versionado neste manifest pra
+# não vazar credenciais no git. Crie-o uma vez no cluster com:
+#
+#   kubectl create secret generic recall-secret \
+#     --from-literal=DB_URL='postgres://recall:recall@postgres-svc:5432/recall?sslmode=disable' \
+#     --from-literal=AUTH_TOKEN="$(openssl rand -hex 32)"
+#
+# Pra recuperar o token depois:
+#   kubectl get secret recall-secret -o jsonpath='{.data.AUTH_TOKEN}' | base64 -d
+#
+# Em produção: SOPS, Sealed Secrets ou External Secrets.
 
----
 # ============================================================
 # Deployment do recall server
 # ============================================================
@@ -47,6 +42,11 @@ spec:
                 secretKeyRef:
                   name: recall-secret
                   key: DB_URL
+            - name: AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: recall-secret
+                  key: AUTH_TOKEN
             - name: SERVER_HOST
               value: "0.0.0.0"
             - name: SERVER_PORT

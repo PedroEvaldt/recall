@@ -24,3 +24,8 @@ func respondWithJSON(w http.ResponseWriter, code int, payload any) {
 func respondWithError(w http.ResponseWriter, code int, msg string) {
 	respondWithJSON(w, code, map[string]string{"error": msg})
 }
+
+func respondUnauthorized(w http.ResponseWriter) {
+	w.Header().Set("WWW-Authenticate", `Bearer realm="restricted", charset="UTF-8"`)
+	respondWithError(w, http.StatusUnauthorized, "unauthorized")
+}

@@ -29,6 +29,10 @@ func Load() (*Config, error) {
 		StoragePath: getEnv("STORAGE_PATH", "./storage"),
 	}
 
+	if cfg.AuthToken == "" {
+		return nil, errors.New("AUTH_TOKEN is required, set it in your .env file")
+	}
+
 	if cfg.DBURL == "" {
 		return nil, errors.New("DB_URL is required, set it in your .env file")
 	}

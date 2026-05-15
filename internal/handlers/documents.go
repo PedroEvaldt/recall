@@ -88,24 +88,30 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) ListDocuments(w http.ResponseWriter, r *http.Request) {
 	var (
-		documents []database.Document
-		err       error
-		limit     pgtype.Int4
+		documents  []database.Document
+		err        error
+		limit      pgtype.Int4
+		limitInt32 int
 	)
 
 	searchTerm := r.URL.Query().Get("q")
 	limitTerm := r.URL.Query().Get("limit")
 
 	if limitTerm != "" {
-		limitInt32, err := strconv.Atoi(limitTerm)
-		limit = pgtype.Int4{
-			Int32: int32(limitInt32),
-			Valid: true,
-		}
+		limitInt32, err = strconv.Atoi(limitTerm)
 		if err != nil {
 			log.Printf("convert limit to int: %v", err)
 			respondWithError(w, http.StatusBadRequest, "failed to convert limit to int")
 			return
+		}
+		if limitInt32 < 0 {
+			log.Printf("negative limit: %v", limitInt32)
+			respondWithError(w, http.StatusBadRequest, "limit must be non-negative")
+			return
+		}
+		limit = pgtype.Int4{
+			Int32: int32(limitInt32),
+			Valid: true,
 		}
 	}
 

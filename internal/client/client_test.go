@@ -41,7 +41,7 @@ func TestNewClient(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, err := New(tt.baseURL, timeout)
+			c, err := New(tt.baseURL, timeout, "test-token")
 			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf("New(%q) err = %v, want %v", tt.baseURL, err, tt.wantErr)
 			}

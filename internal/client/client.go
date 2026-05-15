@@ -30,9 +30,10 @@ func IsNotFound(err error) bool { return errors.Is(err, ErrNotFound) }
 type Client struct {
 	baseURL    *url.URL
 	httpClient *http.Client
+	authToken  string
 }
 
-func New(baseURL string, timeout time.Duration) (*Client, error) {
+func New(baseURL string, timeout time.Duration, token string) (*Client, error) {
 	if baseURL == "" {
 		return nil, fmt.Errorf("%w (set --server or RECALL_SERVER)", ErrEmptyURL)
 	}
@@ -48,7 +49,12 @@ func New(baseURL string, timeout time.Duration) (*Client, error) {
 		httpClient: &http.Client{
 			Timeout: timeout,
 		},
+		authToken: token,
 	}, nil
+}
+
+func (c *Client) setHeaders(req *http.Request) {
+	req.Header.Set("Authorization", "Bearer "+c.authToken)
 }
 
 func (c *Client) ListDocuments(ctx context.Context, query, limit string) ([]api.DocumentResponse, error) {
@@ -66,6 +72,7 @@ func (c *Client) ListDocuments(ctx context.Context, query, limit string) ([]api.
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}
+	c.setHeaders(req)
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("do request: %w", err)
@@ -95,6 +102,7 @@ func (c *Client) GetContent(ctx context.Context, id uuid.UUID) (io.ReadCloser, e
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}
+	c.setHeaders(req)
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("do request: %w", err)
@@ -122,6 +130,7 @@ func (c *Client) GetMeta(ctx context.Context, id uuid.UUID) (api.MetaResponse, e
 	if err != nil {
 		return api.MetaResponse{}, fmt.Errorf("create request: %w", err)
 	}
+	c.setHeaders(req)
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return api.MetaResponse{}, fmt.Errorf("do request: %w", err)
@@ -181,6 +190,7 @@ func (c *Client) PostDocument(ctx context.Context, title, filename string, body 
 		return nil, fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
+	c.setHeaders(req)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

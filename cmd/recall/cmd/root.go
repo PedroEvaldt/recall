@@ -13,7 +13,10 @@ import (
 
 const configPath = "/.config/recall"
 
-var serverURL string
+var (
+	serverURL string
+	authToken string
+)
 
 var rootCmd = &cobra.Command{
 	Use:   "recall",
@@ -45,6 +48,15 @@ func init() {
 	)
 	if err := viper.BindPFlag("server", rootCmd.PersistentFlags().Lookup("server")); err != nil {
 		panic(fmt.Sprintf("bind server flag: %v", err))
+	}
+	rootCmd.PersistentFlags().StringVar(
+		&authToken,
+		"auth-token",
+		"",
+		"bearer token for the recall server (env: RECALL_AUTH_TOKEN, preferred to keep it out of shell history)",
+	)
+	if err := viper.BindPFlag("auth_token", rootCmd.PersistentFlags().Lookup("auth-token")); err != nil {
+		panic(fmt.Sprintf("bind auth-token flag: %v", err))
 	}
 }
 

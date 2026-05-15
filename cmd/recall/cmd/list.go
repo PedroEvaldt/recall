@@ -41,7 +41,7 @@ var listCmd = &cobra.Command{
 		if !listAll {
 			query = strings.Join(args, " ")
 		}
-		c, err := client.New(serverURL, 30*time.Second)
+		c, err := client.New(serverURL, 30*time.Second, viper.GetString("auth_token"))
 		if err != nil {
 			return fmt.Errorf("create client: %w", err)
 		}

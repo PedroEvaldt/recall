@@ -16,19 +16,19 @@ steps:
         from_secret: K8S_TOKEN
     commands:
       - SHORT_SHA=$(echo "$CI_COMMIT_SHA" | cut -c1-8)
-        - kubectl apply -f k8s/postgres.yaml
-            --server=https://192.168.76.201:6443
-            --insecure-skip-tls-verify=true
-            --token="$K8S_TOKEN"
-        - kubectl apply -f k8s/recall.yaml
-            --server=https://192.168.76.201:6443
-            --insecure-skip-tls-verify=true
-            --token="$K8S_TOKEN"
-        - kubectl set image deployment/recall-server recall-server=192.168.76.202:3000/pedro/recall-server:$SHORT_SHA
-            --server=https://192.168.76.201:6443
-            --insecure-skip-tls-verify=true
-            --token="$K8S_TOKEN"
-        - kubectl rollout status deployment/recall-server --timeout=120s
-            --server=https://192.168.76.201:6443
-            --insecure-skip-tls-verify=true
-            --token="$K8S_TOKEN
+      - kubectl apply -f k8s/postgres.yaml
+          --server=https://192.168.76.201:6443
+          --insecure-skip-tls-verify=true
+          --token="$K8S_TOKEN"
+      - kubectl apply -f k8s/recall.yaml
+          --server=https://192.168.76.201:6443
+          --insecure-skip-tls-verify=true
+          --token="$K8S_TOKEN"
+      - kubectl set image deployment/recall-server recall-server=192.168.76.202:3000/pedro/recall-server:$SHORT_SHA
+          --server=https://192.168.76.201:6443
+          --insecure-skip-tls-verify=true
+          --token="$K8S_TOKEN"
+      - kubectl rollout status deployment/recall-server --timeout=120s
+          --server=https://192.168.76.201:6443
+          --insecure-skip-tls-verify=true
+          --token="$K8S_TOKEN"

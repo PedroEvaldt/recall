@@ -24,12 +24,12 @@ func run(ctx context.Context) error {
 
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("config: %v", err)
+		return fmt.Errorf("config: %w", err)
 	}
 
 	pool, err := database.NewPool(ctx, cfg.DBURL)
 	if err != nil {
-		log.Fatalf("database: %v", err)
+		return fmt.Errorf("database: %w", err)
 	}
 	defer pool.Close()
 
@@ -37,7 +37,7 @@ func run(ctx context.Context) error {
 
 	fileStore, err := storage.NewFileStore(cfg.StoragePath)
 	if err != nil {
-		log.Fatalf("file store: %v", err)
+		return fmt.Errorf("storage: %w", err)
 	}
 
 	handler := handlers.NewHandler(pool, queries, fileStore)
@@ -64,7 +64,7 @@ func run(ctx context.Context) error {
 
 	select {
 	case err := <-serverErr:
-		log.Fatalf("server: %v", err)
+		return fmt.Errorf("server: %w", err)
 	case <-ctx.Done():
 		log.Println("shutdown signal received")
 	}

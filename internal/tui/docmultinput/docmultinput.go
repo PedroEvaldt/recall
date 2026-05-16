@@ -35,6 +35,7 @@ func InitialModel() MultInputModel {
 	var t textinput.Model
 	for i := range m.Inputs {
 		t = textinput.New()
+		t.SetWidth(128)
 
 		s := t.Styles()
 		s.Cursor.Color = lipgloss.Color("205")

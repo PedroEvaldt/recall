@@ -16,23 +16,16 @@ type Handler struct {
 	authToken string
 }
 
-func NewHandler(pool *pgxpool.Pool, queries *database.Queries, fileStore *storage.FileStore, authToken string) *Handler {
-	return &Handler{
+func NewServer(pool *pgxpool.Pool, queries *database.Queries, fileStore *storage.FileStore, authToken string) http.Handler {
+	h := &Handler{
 		pool:      pool,
 		queries:   queries,
 		fileStore: fileStore,
 		authToken: authToken,
 	}
-}
-
-// Register registra todas as rotas HTTP no mux.
-func (h *Handler) Register() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /health", h.Health)
-	mux.HandleFunc("POST /documents", h.CreateDocument)
-	mux.HandleFunc("GET /documents", h.ListDocuments)
-	mux.HandleFunc("GET /documents/{id}", h.GetDocumentMeta)
-	mux.HandleFunc("GET /documents/{id}/content", h.GetDocument)
-
-	return bearerAuthMiddleware(h.authToken)(mux)
+	addRoutes(mux, h)
+	var handler http.Handler = mux
+	handler = bearerAuthMiddleware(authToken)(handler)
+	return handler
 }

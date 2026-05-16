@@ -40,11 +40,11 @@ func run(ctx context.Context) error {
 		return fmt.Errorf("storage: %w", err)
 	}
 
-	handler := handlers.NewHandler(pool, queries, fileStore, cfg.AuthToken)
+	handler := handlers.NewServer(pool, queries, fileStore, cfg.AuthToken)
 
 	srv := &http.Server{
 		Addr:         net.JoinHostPort(cfg.Host, cfg.Port),
-		Handler:      handler.Register(),
+		Handler:      handler,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  60 * time.Second,

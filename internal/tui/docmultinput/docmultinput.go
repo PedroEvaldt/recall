@@ -22,17 +22,17 @@ var (
 
 type MultInputModel struct {
 	focusIndex int
-	Inputs     []textinput.MultInputModel
+	Inputs     []textinput.Model
 	cursorMode cursor.Mode
 	quitting   bool
 }
 
 func InitialModel() MultInputModel {
 	m := MultInputModel{
-		Inputs: make([]textinput.MultInputModel, 2),
+		Inputs: make([]textinput.Model, 2),
 	}
 
-	var t textinput.MultInputModel
+	var t textinput.Model
 	for i := range m.Inputs {
 		t = textinput.New()
 

@@ -72,7 +72,10 @@ var initCmd = &cobra.Command{
 
 		// Imprimir mensagem
 		sucessMsg := fmt.Sprintf("Config saved to %s\n\n%s\n\nAdd this token to your server's AUTH_TOKEN enviroment variable if your want to change it", configFilePath, content)
-		fmt.Printf(sucessMsg)
+		_, err = fmt.Print(sucessMsg)
+		if err != nil {
+			return fmt.Errorf("print final sucess message: %w", err)
+		}
 		return nil
 	},
 }

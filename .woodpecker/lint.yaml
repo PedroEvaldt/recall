@@ -5,9 +5,15 @@ steps:
   - name: fmt
     image: golang:1.26.2-alpine
     commands:
-      - test -z $(go fmt ./...)
+      - test -z "$(go fmt ./...)"
+    volumes:
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
   - name: staticcheck
     image: golang:1.26.2-alpine
     commands:
       - go install honnef.co/go/tools/cmd/staticcheck@2026.1
       - staticcheck ./...
+    volumes:
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build

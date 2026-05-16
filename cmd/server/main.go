@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -18,11 +19,13 @@ import (
 	"github.com/PedroEvaldt/recall/internal/storage/database"
 )
 
-func run(ctx context.Context) error {
+func run(ctx context.Context, getenv func(string) string, stderr io.Writer) error {
 	ctx, cancel := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	cfg, err := config.Load()
+	logger := log.New(stderr, "", log.LstdFlags)
+
+	cfg, err := config.LoadFrom(getenv)
 	if err != nil {
 		return fmt.Errorf("config: %w", err)
 	}
@@ -52,7 +55,7 @@ func run(ctx context.Context) error {
 
 	serverErr := make(chan error, 1)
 	go func() {
-		log.Printf("server listening on %s\n", srv.Addr)
+		logger.Printf("server listening on %s\n", srv.Addr)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serverErr <- err
 		}
@@ -63,20 +66,20 @@ func run(ctx context.Context) error {
 	case err := <-serverErr:
 		return fmt.Errorf("server: %w", err)
 	case <-ctx.Done():
-		log.Println("shutdown signal received")
+		logger.Println("shutdown signal received")
 	}
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(shutdownCtx); err != nil {
-		log.Fatalf("graceful shutdown: %v", err)
+		return fmt.Errorf("graceful shutdown: %v", err)
 	}
 	return nil
 }
 
 func main() {
 	ctx := context.Background()
-	if err := run(ctx); err != nil {
+	if err := run(ctx, os.Getenv, os.Stderr); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}

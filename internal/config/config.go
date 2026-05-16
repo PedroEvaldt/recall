@@ -2,7 +2,6 @@ package config
 
 import (
 	"errors"
-	"os"
 
 	"github.com/joho/godotenv"
 )
@@ -16,17 +15,15 @@ type Config struct {
 	StoragePath string
 }
 
-// Load lê o arquivo .env (se existir) e o ambiente, retornando erro se algum
-// valor obrigatório estiver ausente.
-func Load() (*Config, error) {
+func LoadFrom(getenv func(string) string) (*Config, error) {
 	_ = godotenv.Load()
 
 	cfg := &Config{
-		DBURL:       getEnv("DB_URL", ""),
-		AuthToken:   getEnv("AUTH_TOKEN", ""),
-		Host:        getEnv("SERVER_HOST", "localhost"),
-		Port:        getEnv("SERVER_PORT", "8080"),
-		StoragePath: getEnv("STORAGE_PATH", "./storage"),
+		DBURL:       getEnvDefault(getenv, "DB_URL", ""),
+		AuthToken:   getEnvDefault(getenv, "AUTH_TOKEN", ""),
+		Host:        getEnvDefault(getenv, "SERVER_HOST", "localhost"),
+		Port:        getEnvDefault(getenv, "SERVER_PORT", "8080"),
+		StoragePath: getEnvDefault(getenv, "STORAGE_PATH", "./storage"),
 	}
 
 	if cfg.AuthToken == "" {
@@ -39,8 +36,8 @@ func Load() (*Config, error) {
 	return cfg, nil
 }
 
-func getEnv(key, fallback string) string {
-	if value := os.Getenv(key); value != "" {
+func getEnvDefault(getenv func(string) string, key, fallback string) string {
+	if value := getenv(key); value != "" {
 		return value
 	}
 	return fallback

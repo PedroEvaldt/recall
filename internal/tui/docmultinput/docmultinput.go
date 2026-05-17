@@ -20,6 +20,7 @@ var (
 	blurredButton = fmt.Sprintf("[ %s ]", blurredStyle.Render("Submit"))
 )
 
+// MultInputModel stores the input state for server URL and auth token setup.
 type MultInputModel struct {
 	focusIndex int
 	Inputs     []textinput.Model
@@ -27,6 +28,7 @@ type MultInputModel struct {
 	quitting   bool
 }
 
+// InitialModel creates the setup form used to collect server URL and auth token.
 func InitialModel() MultInputModel {
 	m := MultInputModel{
 		Inputs: make([]textinput.Model, 2),
@@ -61,10 +63,12 @@ func InitialModel() MultInputModel {
 	return m
 }
 
+// Init starts the text input cursor blink command.
 func (m MultInputModel) Init() tea.Cmd {
 	return textinput.Blink
 }
 
+// Update handles field focus, cursor mode changes, text input, and submission.
 func (m MultInputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
@@ -143,6 +147,7 @@ func (m *MultInputModel) updateInputs(msg tea.Msg) tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
+// View renders the setup form and propagates the active cursor position.
 func (m MultInputModel) View() tea.View {
 	var b strings.Builder
 	var c *tea.Cursor

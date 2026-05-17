@@ -6,7 +6,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// Config concentra todas as variáveis de ambiente lidas no startup.
+// Config contains every server setting loaded during startup.
 type Config struct {
 	DBURL       string
 	AuthToken   string
@@ -15,6 +15,9 @@ type Config struct {
 	StoragePath string
 }
 
+// LoadFrom loads server configuration from the provided getenv function.
+// It also loads a local .env file as a development convenience before reading
+// values from the environment.
 func LoadFrom(getenv func(string) string) (*Config, error) {
 	_ = godotenv.Load()
 

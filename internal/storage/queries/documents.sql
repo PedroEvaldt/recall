@@ -1,4 +1,5 @@
 -- name: CreateDocument :one
+-- Insert metadata for a file already saved in the filesystem store.
 INSERT INTO
   documents (
     title,
@@ -23,6 +24,7 @@ RETURNING
   *;
 
 -- name: ListDocuments :many
+-- Search active documents by title or tag, newest first.
 SELECT
   *
 FROM
@@ -48,6 +50,7 @@ LIMIT
   sqlc.narg ('limit');
 
 -- name: ListAllDocuments :many
+-- List every active document, newest first.
 SELECT
   *
 FROM
@@ -60,6 +63,7 @@ LIMIT
   sqlc.narg ('limit');
 
 -- name: GetDocument :one
+-- Return metadata required to serve one active document and locate its stored content.
 SELECT
   title,
   filename,
@@ -73,4 +77,3 @@ FROM
 WHERE
   id = sqlc.arg (id)::uuid
   AND deleted_at IS NULL;
-

@@ -7,7 +7,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// NewPool cria um pool de conexões pgx e valida com Ping antes de retornar.
+// NewPool creates a pgx connection pool and validates it with Ping before
+// returning it to the caller.
 func NewPool(ctx context.Context, dbURL string) (*pgxpool.Pool, error) {
 	pool, err := pgxpool.New(ctx, dbURL)
 	if err != nil {

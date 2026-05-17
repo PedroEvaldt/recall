@@ -19,7 +19,7 @@ var (
 
 var uploadCmd = &cobra.Command{
 	Use:   "upload file [-t title] [--tags tags]",
-	Short: "uploads a document into the database",
+	Short: "upload a document to the recall server",
 	Example: `	recall upload notes.md --title "Go struct"	
 	recall upload paper.pdf -t "Algebra linear" --tags math,linalg`,
 	Args: cobra.ExactArgs(1),
@@ -60,7 +60,7 @@ func init() {
 		"title",
 		"t",
 		"",
-		"title of the document (defaults to filename without extension",
+		"title of the document (defaults to filename without extension)",
 	)
 	uploadCmd.Flags().StringSliceVar(
 		&uploadTags,

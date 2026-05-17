@@ -20,14 +20,14 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:   "recall",
-	Short: "recall is a resume maker",
-	Long: `A easy to use cli tool to get resumes and fast tips
-		   for concepts that you already know but forgot, easy
-		   access while programming`,
+	Short: "recall stores and retrieves personal notes from your terminal",
+	Long: `recall is a CLI for uploading, searching, and reading personal
+technical notes from a self-hosted recall server.`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 }
 
+// Execute runs the root Cobra command and prints user-facing errors.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		if !errors.Is(err, errSilent) {
@@ -61,21 +61,21 @@ func init() {
 }
 
 func initConfig() {
-	// Load .env from current directory (best effort)
+	// Load .env from the current directory on a best-effort basis.
 	_ = godotenv.Load()
 
-	// Read config file
+	// Read the user-level config file.
 	home, _ := os.UserHomeDir()
 	viper.AddConfigPath(home + configPath)
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 
-	// Read env file
+	// Read RECALL_* environment variables.
 	viper.SetEnvPrefix("RECALL")
 	viper.AutomaticEnv()
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
-	// Try reading arquive
+	// Try reading the config file without failing when it does not exist yet.
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			fmt.Fprintln(os.Stderr, "Error reading config:", err)

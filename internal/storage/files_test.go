@@ -22,22 +22,20 @@ func TestSaveFile(t *testing.T) {
 		wantErr   bool
 	}{
 		{
-			// Verificar se cria as pastas certas
-			name:      "create arquive in the correct path",
+			// Verify that the expected UUID-prefixed directory is created.
+			name:      "create file in the correct path",
 			extension: ".txt",
 			src:       strings.NewReader("content"),
 			wantErr:   false,
 		},
 		{
-			// Verificar se cria as pastas certas
 			name:      "extension without . returns err",
 			extension: "txt",
 			src:       strings.NewReader("content"),
 			wantErr:   true,
 		},
 		{
-			// Verificar se cria as pastas certas
-			name:      "error in copy remove partial arquive",
+			name:      "error in copy removes partial file",
 			extension: ".txt",
 			src:       iotest.ErrReader(boom),
 			wantErr:   true,
@@ -70,7 +68,7 @@ func TestSaveFile(t *testing.T) {
 				t.Errorf("path %q, want %q", got, wantPath)
 			}
 			if _, statErr := os.Stat(filepath.Join(baseDir, got)); statErr != nil {
-				t.Errorf("arquive should exist: %v", statErr)
+				t.Errorf("file should exist: %v", statErr)
 			}
 		})
 	}

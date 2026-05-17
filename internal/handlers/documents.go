@@ -17,24 +17,24 @@ import (
 )
 
 const (
-	maxUploadSize = 1000 << 20 // 1Gb — limite total da requisição
-	maxMemorySize = 32 << 20   // 32Mb — buffer em memória; resto vai para disco
+	maxUploadSize = 1000 << 20 // 1 GiB total request limit.
+	maxMemorySize = 32 << 20   // 32 MiB multipart memory buffer; the rest spills to disk.
 )
 
+// CreateDocument accepts a multipart upload, stores the file content on disk,
+// and persists document metadata in PostgreSQL.
 func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
-	err := r.ParseMultipartForm(maxMemorySize) // #nosec G120 -- body já limitado por MaxBytesReader acima
+	err := r.ParseMultipartForm(maxMemorySize) // #nosec G120 -- request body is already limited by MaxBytesReader above.
 	if err != nil {
 		log.Printf("multipart form error: %v", err)
 		respondWithError(w, http.StatusBadRequest, "failed to get multipart form")
 		return
 	}
 
-	// Pega campo de texto (chama ParseMultipartForm implicitamente se ainda não parseou)
 	title := r.FormValue("title")
 	tags := normalizeTags(r.FormValue("tags"))
 
-	// Pega arquivo
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		log.Printf("get file from form: %v", err)
@@ -43,7 +43,6 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	// Getting from header
 	filename := header.Filename
 	extension := filepath.Ext(header.Filename)
 	mimeType := header.Header.Get("Content-Type")
@@ -86,6 +85,7 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// ListDocuments returns document metadata matching the optional query and limit.
 func (h *Handler) ListDocuments(w http.ResponseWriter, r *http.Request) {
 	var (
 		documents  []database.Document
@@ -149,6 +149,7 @@ func (h *Handler) ListDocuments(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, response)
 }
 
+// GetDocument streams the stored document content for a document ID.
 func (h *Handler) GetDocument(w http.ResponseWriter, r *http.Request) {
 	docID := r.PathValue("id")
 	docUUID, err := uuid.Parse(docID)
@@ -186,6 +187,7 @@ func (h *Handler) GetDocument(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, document.Filename, document.CreatedAt.Time, file)
 }
 
+// GetDocumentMeta returns metadata for a single document ID.
 func (h *Handler) GetDocumentMeta(w http.ResponseWriter, r *http.Request) {
 	docID := r.PathValue("id")
 	docUUID, err := uuid.Parse(docID)
@@ -216,7 +218,7 @@ func (h *Handler) GetDocumentMeta(w http.ResponseWriter, r *http.Request) {
 func slugify(s string) string {
 	s = strings.ToLower(s)
 	s = strings.ReplaceAll(s, " ", "-")
-	// produção: usar github.com/gosimple/slug
+	// Production-quality slugging should normalize punctuation and Unicode.
 	return s
 }
 

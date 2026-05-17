@@ -1,4 +1,6 @@
 -- +goose Up
+-- Create the initial document metadata table. File content lives on disk; this
+-- table stores searchable metadata and the relative storage path.
 CREATE TABLE documents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title VARCHAR(100) NOT NULL UNIQUE,
@@ -12,5 +14,5 @@ CREATE TABLE documents (
 );
 
 -- +goose Down
+-- Drop the initial document metadata table.
 DROP TABLE documents;
-

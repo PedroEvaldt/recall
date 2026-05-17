@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Handler agrupa as dependências usadas pelos HTTP handlers da aplicação.
+// Handler groups the dependencies used by the application's HTTP handlers.
 type Handler struct {
 	pool      *pgxpool.Pool
 	queries   *database.Queries
@@ -16,6 +16,7 @@ type Handler struct {
 	authToken string
 }
 
+// NewServer wires routes and middleware into a single HTTP handler.
 func NewServer(pool *pgxpool.Pool, queries *database.Queries, fileStore *storage.FileStore, authToken string) http.Handler {
 	h := &Handler{
 		pool:      pool,

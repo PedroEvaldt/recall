@@ -18,21 +18,28 @@ import (
 )
 
 var (
-	ErrNotFound    = errors.New("document not found")
-	ErrEmptyURL    = errors.New("server URL is empty")
-	ErrInvalidURL  = errors.New("server URL is invalid")
+	// ErrNotFound marks a server response where the requested document does not exist.
+	ErrNotFound = errors.New("document not found")
+	// ErrEmptyURL marks an empty server URL configuration.
+	ErrEmptyURL = errors.New("server URL is empty")
+	// ErrInvalidURL marks a server URL that cannot be parsed.
+	ErrInvalidURL = errors.New("server URL is invalid")
+	// ErrMissingPart marks a parsed URL without both scheme and host.
 	ErrMissingPart = errors.New("server URL must include scheme and host")
 )
 
 // IsNotFound reports whether err wraps ErrNotFound.
 func IsNotFound(err error) bool { return errors.Is(err, ErrNotFound) }
 
+// Client sends authenticated requests to a recall server.
 type Client struct {
 	baseURL    *url.URL
 	httpClient *http.Client
 	authToken  string
 }
 
+// New validates baseURL and returns a Client configured with request timeout
+// and bearer-token authentication.
 func New(baseURL string, timeout time.Duration, token string) (*Client, error) {
 	if baseURL == "" {
 		return nil, fmt.Errorf("%w (set --server or RECALL_SERVER)", ErrEmptyURL)
@@ -57,6 +64,8 @@ func (c *Client) setHeaders(req *http.Request) {
 	req.Header.Set("Authorization", "Bearer "+c.authToken)
 }
 
+// ListDocuments fetches document metadata from the server, optionally filtering
+// by query and limiting the number of results.
 func (c *Client) ListDocuments(ctx context.Context, query, limit string) ([]api.DocumentResponse, error) {
 	u := c.baseURL.JoinPath("/documents")
 	q := u.Query()
@@ -96,6 +105,7 @@ func (c *Client) ListDocuments(ctx context.Context, query, limit string) ([]api.
 	return docs, nil
 }
 
+// GetContent downloads the raw document content stream for id.
 func (c *Client) GetContent(ctx context.Context, id uuid.UUID) (io.ReadCloser, error) {
 	u := c.baseURL.JoinPath("/documents", id.String(), "/content")
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
@@ -124,6 +134,7 @@ func (c *Client) GetContent(ctx context.Context, id uuid.UUID) (io.ReadCloser, e
 	return resp.Body, nil
 }
 
+// GetMeta fetches document metadata without downloading the document content.
 func (c *Client) GetMeta(ctx context.Context, id uuid.UUID) (api.MetaResponse, error) {
 	u := c.baseURL.JoinPath("/documents", id.String())
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
@@ -155,6 +166,8 @@ func (c *Client) GetMeta(ctx context.Context, id uuid.UUID) (api.MetaResponse, e
 	return docMeta, nil
 }
 
+// PostDocument uploads a document as multipart form data and returns the
+// metadata created by the server.
 func (c *Client) PostDocument(ctx context.Context, title, filename string, body io.Reader, tags []string) (*api.DocumentResponse, error) {
 	var buf bytes.Buffer
 	writer := multipart.NewWriter(&buf)

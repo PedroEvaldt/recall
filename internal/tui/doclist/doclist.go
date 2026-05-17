@@ -35,6 +35,7 @@ func (d docItem) Title() string       { return d.doc.Title }
 func (d docItem) Description() string { return descriptionConverter(d.doc.MimeType, d.doc.Tags) }
 func (d docItem) FilterValue() string { return d.doc.Title }
 
+// Model stores the document list state for the Bubble Tea runtime.
 type Model struct {
 	Aborted  bool
 	query    string
@@ -45,6 +46,7 @@ type Model struct {
 	Selected *api.DocumentResponse
 }
 
+// New creates a document list model that fetches results with the provided client.
 func New(c *client.Client, query, limit string, ctx context.Context) Model {
 	delegate := list.NewDefaultDelegate()
 	l := list.New([]list.Item{}, delegate, 0, 0)
@@ -58,6 +60,7 @@ func New(c *client.Client, query, limit string, ctx context.Context) Model {
 	}
 }
 
+// Init starts the initial document fetch command.
 func (m Model) Init() tea.Cmd {
 	return m.fetchDocs
 }
@@ -70,6 +73,7 @@ func (m Model) fetchDocs() tea.Msg {
 	return documentsListMsg{docs}
 }
 
+// Update handles result loading, keyboard selection, cancellation, and resize events.
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
@@ -111,6 +115,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+// View renders the list in the terminal alternate screen.
 func (m Model) View() tea.View {
 	v := tea.NewView(docStyle.Render(m.list.View()))
 	v.AltScreen = true

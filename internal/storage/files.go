@@ -13,17 +13,20 @@ import (
 	"github.com/google/uuid"
 )
 
-// FileStore persiste arquivos no disco local em uma estrutura particionada por
-// prefixo do UUID (ex: <baseDir>/ab/cdef.../file.pdf), evitando diretórios com
-// dezenas de milhares de entradas. As operações de IO ficam confinadas ao
-// baseDir via *os.Root: paths com ".." ou symlinks apontando pra fora retornam
-// erro em vez de escapar.
+// FileStore persists files on local disk under a UUID-prefixed directory layout.
+// A document with ID "abcdef..." is stored as "<baseDir>/ab/cdef...<ext>",
+// which avoids putting too many entries in one directory.
+//
+// All I/O is confined to baseDir through *os.Root. Relative paths that try to
+// escape through ".." or symlinks return an error instead of accessing files
+// outside the configured storage root.
 type FileStore struct {
 	root *os.Root
 }
 
 var validExt = regexp.MustCompile(`^\.[a-zA-Z0-9]{1,16}$`)
 
+// NewFileStore creates the base storage directory and opens it as an os.Root.
 func NewFileStore(baseDir string) (*FileStore, error) {
 	if err := os.MkdirAll(baseDir, 0o750); err != nil {
 		return nil, fmt.Errorf("create base dir: %w", err)
@@ -35,12 +38,13 @@ func NewFileStore(baseDir string) (*FileStore, error) {
 	return &FileStore{root: root}, nil
 }
 
+// Close releases the underlying storage root.
 func (f *FileStore) Close() error {
 	return f.root.Close()
 }
 
-// SaveFile escreve o conteúdo em <baseDir>/<2 chars do UUID>/<resto>.<ext> e
-// devolve o caminho relativo ao baseDir e o tamanho em bytes gravado.
+// SaveFile writes src to <baseDir>/<first 2 UUID chars>/<remaining UUID><ext>.
+// It returns the relative storage path and the number of bytes written.
 func (f *FileStore) SaveFile(id uuid.UUID, extension string, src io.Reader) (string, int64, error) {
 	if !strings.HasPrefix(extension, ".") {
 		return "", 0, errors.New("extension must start with '.'")
@@ -77,6 +81,7 @@ func (f *FileStore) SaveFile(id uuid.UUID, extension string, src io.Reader) (str
 	return relPath, size, nil
 }
 
+// DeleteFile removes a file by its relative storage path.
 func (f *FileStore) DeleteFile(relPath string) error {
 	if err := f.root.Remove(relPath); err != nil {
 		return fmt.Errorf("delete file: %w", err)
@@ -84,6 +89,7 @@ func (f *FileStore) DeleteFile(relPath string) error {
 	return nil
 }
 
+// OpenFile opens a stored file by its relative storage path.
 func (f *FileStore) OpenFile(path string) (io.ReadSeekCloser, error) {
 	file, err := f.root.Open(path)
 	if err != nil {
@@ -95,6 +101,7 @@ func (f *FileStore) OpenFile(path string) (io.ReadSeekCloser, error) {
 	return file, nil
 }
 
+// Exists reports whether a relative storage path exists.
 func (f *FileStore) Exists(relPath string) bool {
 	_, err := f.root.Stat(relPath)
 	return err == nil

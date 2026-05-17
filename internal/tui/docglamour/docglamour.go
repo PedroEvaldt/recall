@@ -14,6 +14,7 @@ type example struct {
 	viewport viewport.Model
 }
 
+// NewExample renders Markdown content into a scrollable terminal viewport.
 func NewExample(content string, isDark bool) (*example, error) {
 	const (
 		width  = 78
@@ -67,6 +68,7 @@ func (e example) Init() tea.Cmd {
 	return nil
 }
 
+// Update handles viewport navigation and quit keys.
 func (e example) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
@@ -83,6 +85,7 @@ func (e example) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
+// View renders the Markdown viewport and navigation help.
 func (e example) View() tea.View {
 	return tea.NewView(e.viewport.View() + e.helpView())
 }

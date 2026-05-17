@@ -1,3 +1,4 @@
+# Test pipeline: runs the Go test suite with coverage on every push.
 when:
   - event: push
 

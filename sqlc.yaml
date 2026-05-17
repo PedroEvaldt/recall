@@ -1,3 +1,4 @@
+# sqlc generates typed Go accessors from the schema and query files.
 version: "2"
 sql:
   - schema: "internal/storage/schemas"
@@ -8,5 +9,4 @@ sql:
         package: "database"
         sql_package: "pgx/v5"
         out: "internal/storage/database"
-
 

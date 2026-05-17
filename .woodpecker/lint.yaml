@@ -1,3 +1,4 @@
+# Lint pipeline: verifies formatting and static analysis on every push.
 when:
   - event: push
 

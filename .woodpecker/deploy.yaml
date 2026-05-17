@@ -1,3 +1,4 @@
+# Deploy pipeline: applies Kubernetes manifests and rolls out the current image.
 depends_on:
   - lint
   - test

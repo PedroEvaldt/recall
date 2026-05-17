@@ -1,3 +1,4 @@
+# Security pipeline: runs gosec against all Go packages on every push.
 when:
   - event: push
 

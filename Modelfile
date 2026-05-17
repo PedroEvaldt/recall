@@ -1,4 +1,7 @@
-# Choose the best model for you
+# Local summary-generation model used by recall notes.
+# The SYSTEM prompt intentionally asks for Brazilian Portuguese output because
+# this model produces personal note content, not repository documentation.
+# Choose the best local model for your machine.
 FROM qwen3.5:9b 
 
 PARAMETER temperature 0.5

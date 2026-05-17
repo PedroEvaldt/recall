@@ -1,5 +1,7 @@
+# Development task runner for local database, migrations, builds, and install.
 .PHONY: db-up db-down db-shell goose-up goose-down run-server build install
 
+# Default local database URL used by goose targets.
 DB_URL?=postgres://recall:recall@localhost:5433/recall?sslmode=disable
 
 db-up:

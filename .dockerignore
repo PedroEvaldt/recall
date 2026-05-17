@@ -1,3 +1,4 @@
+# Keep local-only files, secrets, and runtime data out of Docker build contexts.
 .env
 .git
 .gitignore
@@ -9,4 +10,3 @@ LICENSE
 storage/
 bin/
 docker-compose.yml
-

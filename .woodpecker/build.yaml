@@ -1,3 +1,4 @@
+# Build pipeline: publishes versioned server images after checks pass on main.
 depends_on:
   - lint
   - test

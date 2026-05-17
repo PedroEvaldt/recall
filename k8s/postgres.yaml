@@ -1,20 +1,17 @@
 # ============================================================
-# Secret — credenciais do banco de dados
+# Secret: PostgreSQL credentials
 # ============================================================
-# Secret guarda dados sensíveis codificados em base64.
-# O Kubernetes injeta como variável de ambiente no pod,
-# separando segredos do código e dos manifests.
-# Em produção usaria algo como Vault ou Sealed Secrets.
+# Kubernetes stores Secret values separately from manifests that reference them.
+# stringData accepts plain text and Kubernetes converts it to base64 at rest.
+# Production deployments should use Vault, SOPS, Sealed Secrets, External
+# Secrets, or another managed secret workflow.
 apiVersion: v1
 kind: Secret
 metadata:
   name: postgres-secret
 type: Opaque
 stringData:
-  # stringData aceita texto puro — o k8s converte pra base64
-  # Note que o host é "postgres-svc" — o nome do Service que
-  # criamos. Dentro do cluster, Kubernetes resolve esse nome
-  # automaticamente via CoreDNS pro IP do pod do Postgres.
+  # The service name "postgres-svc" is resolved inside the cluster by CoreDNS.
   POSTGRES_USER: "recall"
   POSTGRES_PASSWORD: "recall"
   POSTGRES_DB: "recall"
@@ -22,8 +19,7 @@ stringData:
 ---
 
 # ============================================================
-# PersistentVolumeClaim — reserva 5GB de disco pro banco
-# Os dados ficam no local-path (SSD do Proxmox por padrão)
+# PersistentVolumeClaim: PostgreSQL data storage
 # ============================================================
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -31,33 +27,33 @@ metadata:
   name: postgres-pvc
 spec:
   accessModes:
-    - ReadWriteOnce       # só um pod por vez pode montar
+    - ReadWriteOnce
   resources:
     requests:
-      storage: 5Gi        # 5GB é mais que suficiente pra metadados
-  storageClassName: local-path   # provisionador que o k3s traz built-in
+      storage: 5Gi
+  storageClassName: local-path
 
 ---
 # ============================================================
-# Deployment — roda o pod do PostgreSQL 16
+# Deployment: PostgreSQL 16
 # ============================================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres
 spec:
-  replicas: 1             # só 1 instância (banco não escala assim)
+  replicas: 1
   selector:
     matchLabels:
-      app: postgres       # identifica quais pods pertencem a esse Deployment
+      app: postgres
   template:
     metadata:
       labels:
-        app: postgres     # label que o Service vai usar pra encontrar o pod
+        app: postgres
     spec:
       containers:
         - name: postgres
-          image: postgres:16-alpine    # mesma versão do teu docker-compose
+          image: postgres:16-alpine
           ports:
             - containerPort: 5432
           env:
@@ -66,12 +62,11 @@ spec:
                 secretKeyRef:
                   name: postgres-secret
                   key: POSTGRES_USER
-                
-            - name: POSTGRES_PASSWORD 
+            - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: postgres-secret
-                  key: POSTGRES_PASSWORD 
+                  key: POSTGRES_PASSWORD
             - name: POSTGRES_DB
               valueFrom:
                 secretKeyRef:
@@ -79,16 +74,15 @@ spec:
                   key: POSTGRES_DB
           volumeMounts:
             - name: postgres-data
-              mountPath: /var/lib/postgresql/data    # onde o Postgres guarda dados
+              mountPath: /var/lib/postgresql/data
       volumes:
         - name: postgres-data
           persistentVolumeClaim:
-            claimName: postgres-pvc    # referencia o PVC que criamos acima
+            claimName: postgres-pvc
 
 ---
 # ============================================================
-# Service — expõe o Postgres internamente no cluster
-# Outros pods acessam via: postgres-svc:5432
+# Service: expose PostgreSQL inside the cluster
 # ============================================================
 apiVersion: v1
 kind: Service
@@ -97,8 +91,8 @@ metadata:
 spec:
   type: NodePort
   selector:
-    app: postgres         # encontra pods com essa label
+    app: postgres
   ports:
-    - port: 5432          # porta exposta no Service
-      targetPort: 5432    # porta do container
-      nodePort: 30432 
+    - port: 5432
+      targetPort: 5432
+      nodePort: 30432

@@ -1,5 +1,5 @@
 # ============================================================
-# ESTÁGIO 1: Builder
+# Stage 1: Builder
 # ============================================================
 
 FROM golang:1.26.2-alpine AS builder
@@ -17,7 +17,7 @@ RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /bin/recall-server ./cmd/server
 
 
 # ============================================================
-# ESTÁGIO 2: Runtime
+# Stage 2: Runtime
 # ============================================================
 
 FROM alpine:3.20

@@ -1,5 +1,7 @@
 ![status-badge](http://192.168.76.202:8000/api/badges/1/status.svg)
 
+![recall demo](demo.gif)
+
 # recall
 
 `recall` is a self-hosted document recall service for the terminal. It combines

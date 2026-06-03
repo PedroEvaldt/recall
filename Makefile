@@ -1,5 +1,5 @@
 # Development task runner for local database, migrations, builds, and install.
-.PHONY: db-up db-down db-shell goose-up goose-down run-server build install
+.PHONY: db-up db-down db-shell goose-up goose-down run-server build install test-unit test-all test-coverage
 
 # Default local database URL used by goose targets.
 DB_URL?=postgres://recall:recall@localhost:5433/recall?sslmode=disable
@@ -31,3 +31,15 @@ build:
 
 install:
 	go install ./cmd/recall
+
+# Tests shortcuts
+
+test-unit:
+	go test ./...
+
+test-all:
+	go test -tags=integratinon -count=1 ./...
+
+test-coverage:
+	go test -tags=integration -coverpkg=./... -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out

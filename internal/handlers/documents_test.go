@@ -1,4 +1,6 @@
-package handlers
+//go:build integration
+
+package handlers_test
 
 import (
 	"bytes"
@@ -13,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/PedroEvaldt/recall/internal/api"
+	"github.com/PedroEvaldt/recall/internal/handlers"
 	"github.com/PedroEvaldt/recall/internal/storage"
 	"github.com/PedroEvaldt/recall/internal/storage/database"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -107,12 +110,7 @@ func TestCreateDocuments(t *testing.T) {
 			}
 			t.Cleanup(pool.Close)
 
-			h := &Handler{
-				pool:      pool,
-				queries:   database.New(pool),
-				fileStore: fs,
-				authToken: "test-token",
-			}
+			h := handlers.New(pool, database.New(pool), fs, "test-token")
 
 			if tt.absent {
 				req = httptest.NewRequest("POST", "/document", nil)

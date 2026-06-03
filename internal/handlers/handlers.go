@@ -16,14 +16,19 @@ type Handler struct {
 	authToken string
 }
 
-// NewServer wires routes and middleware into a single HTTP handler.
-func NewServer(pool *pgxpool.Pool, queries *database.Queries, fileStore *storage.FileStore, authToken string) http.Handler {
-	h := &Handler{
+// New build a new Handler struct
+func New(pool *pgxpool.Pool, queries *database.Queries, fileStore *storage.FileStore, authToken string) *Handler {
+	return &Handler{
 		pool:      pool,
 		queries:   queries,
 		fileStore: fileStore,
 		authToken: authToken,
 	}
+}
+
+// NewServer wires routes and middleware into a single HTTP handler.
+func NewServer(pool *pgxpool.Pool, queries *database.Queries, fileStore *storage.FileStore, authToken string) http.Handler {
+	h := New(pool, queries, fileStore, authToken)
 	mux := http.NewServeMux()
 	addRoutes(mux, h)
 	var handler http.Handler = mux

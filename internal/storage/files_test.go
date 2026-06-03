@@ -1,4 +1,6 @@
-package storage
+//go:build !integration
+
+package storage_test
 
 import (
 	"errors"
@@ -9,6 +11,7 @@ import (
 	"testing"
 	"testing/iotest"
 
+	"github.com/PedroEvaldt/recall/internal/storage"
 	"github.com/google/uuid"
 )
 
@@ -44,7 +47,7 @@ func TestSaveFile(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			baseDir := t.TempDir()
-			fs, err := NewFileStore(baseDir)
+			fs, err := storage.NewFileStore(baseDir)
 			if err != nil {
 				t.Fatalf("NewFileStore: %v", err)
 			}

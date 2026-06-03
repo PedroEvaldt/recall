@@ -1,9 +1,13 @@
-package client
+//go:build !integration
+
+package client_test
 
 import (
 	"errors"
 	"testing"
 	"time"
+
+	"github.com/PedroEvaldt/recall/internal/client"
 )
 
 func TestNewClient(t *testing.T) {
@@ -16,22 +20,22 @@ func TestNewClient(t *testing.T) {
 		{
 			name:    "url empty",
 			baseURL: "",
-			wantErr: ErrEmptyURL,
+			wantErr: client.ErrEmptyURL,
 		},
 		{
 			name:    "invalid url",
 			baseURL: "http://invalidurlbla  bla:8080",
-			wantErr: ErrInvalidURL,
+			wantErr: client.ErrInvalidURL,
 		},
 		{
 			name:    "url without scheme",
 			baseURL: "//localhost:8080",
-			wantErr: ErrMissingPart,
+			wantErr: client.ErrMissingPart,
 		},
 		{
 			name:    "url without host",
 			baseURL: "http://",
-			wantErr: ErrMissingPart,
+			wantErr: client.ErrMissingPart,
 		},
 		{
 			name:    "url correct",
@@ -41,7 +45,7 @@ func TestNewClient(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, err := New(tt.baseURL, timeout, "test-token")
+			c, err := client.New(tt.baseURL, timeout, "test-token")
 			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf("New(%q) err = %v, want %v", tt.baseURL, err, tt.wantErr)
 			}

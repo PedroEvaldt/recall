@@ -43,3 +43,7 @@ AGENTS.md
 bin
 main
 simulator.tape
+
+# Tests cover outputs
+coverage.out
+coverage.html

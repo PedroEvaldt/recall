@@ -1,13 +1,17 @@
-package handlers
+//go:build !integration
+
+package handlers_test
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/PedroEvaldt/recall/internal/handlers"
 )
 
 func TestHealth(t *testing.T) {
-	h := &Handler{}
+	h := &handlers.Handler{}
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/health", nil)
 
@@ -23,7 +27,7 @@ func TestHealth(t *testing.T) {
 	}
 
 	got := rec.Body.String()
-	want := `"` + HealthMsg + `"`
+	want := `"` + handlers.HealthMsg + `"`
 	if got != want {
 		t.Errorf("expected response to be %s; got %s", want, got)
 	}

@@ -8,17 +8,22 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/PedroEvaldt/recall/internal/api"
 	"github.com/PedroEvaldt/recall/internal/storage/database"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"golang.org/x/text/runes"
+	"golang.org/x/text/transform"
+	"golang.org/x/text/unicode/norm"
 )
 
 const (
 	maxUploadSize = 1000 << 20 // 1 GiB total request limit.
 	maxMemorySize = 32 << 20   // 32 MiB multipart memory buffer; the rest spills to disk.
+	slugMaxLen    = 80
 )
 
 // CreateDocument accepts a multipart upload, stores the file content on disk,
@@ -33,7 +38,7 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 	}
 
 	title := r.FormValue("title")
-	tags := normalizeTags(r.FormValue("tags"))
+	tags := NormalizeTags(r.FormValue("tags"))
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
@@ -54,7 +59,7 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	docSlug := slugify(title)
+	docSlug := Slugify(title)
 
 	document, err := h.queries.CreateDocument(r.Context(), database.CreateDocumentParams{
 		Title:       title,
@@ -215,14 +220,40 @@ func (h *Handler) GetDocumentMeta(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func slugify(s string) string {
+var slugTransformer = transform.Chain(
+	norm.NFD,
+	runes.Remove(runes.In(unicode.Mn)),
+	norm.NFC,
+)
+
+func Slugify(s string) string {
+	s, _, _ = transform.String(slugTransformer, s)
 	s = strings.ToLower(s)
-	s = strings.ReplaceAll(s, " ", "-")
-	// Production-quality slugging should normalize punctuation and Unicode.
-	return s
+
+	var b strings.Builder
+	b.Grow(len(s))
+	prevDash := true
+
+	for _, r := range s {
+		switch {
+		case r >= 'a' && r <= 'z', r >= '0' && r <= '9':
+			b.WriteRune(r)
+			prevDash = false
+		default:
+			if !prevDash {
+				b.WriteByte('-')
+				prevDash = true
+			}
+		}
+	}
+	out := strings.TrimRight(b.String(), "-")
+	if len(out) > slugMaxLen {
+		out = strings.TrimRight(out[:slugMaxLen], "-")
+	}
+	return out
 }
 
-func normalizeTags(raw string) []string {
+func NormalizeTags(raw string) []string {
 	if raw == "" {
 		return []string{}
 	}

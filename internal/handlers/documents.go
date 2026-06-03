@@ -38,7 +38,7 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 	}
 
 	title := r.FormValue("title")
-	tags := NormalizeTags(r.FormValue("tags"))
+	tags := normalizeTags(r.FormValue("tags"))
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
@@ -59,7 +59,7 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	docSlug := Slugify(title)
+	docSlug := slugify(title)
 
 	document, err := h.queries.CreateDocument(r.Context(), database.CreateDocumentParams{
 		Title:       title,
@@ -226,7 +226,7 @@ var slugTransformer = transform.Chain(
 	norm.NFC,
 )
 
-func Slugify(s string) string {
+func slugify(s string) string {
 	s, _, _ = transform.String(slugTransformer, s)
 	s = strings.ToLower(s)
 
@@ -253,7 +253,7 @@ func Slugify(s string) string {
 	return out
 }
 
-func NormalizeTags(raw string) []string {
+func normalizeTags(raw string) []string {
 	if raw == "" {
 		return []string{}
 	}

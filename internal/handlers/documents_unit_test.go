@@ -1,13 +1,11 @@
 //go:build !integration
 
-package handlers_test
+package handlers
 
 import (
 	"slices"
 	"strings"
 	"testing"
-
-	"github.com/PedroEvaldt/recall/internal/handlers"
 )
 
 func TestSlugify(t *testing.T) {
@@ -47,9 +45,14 @@ func TestSlugify(t *testing.T) {
 			want:  "",
 		},
 		{
-			name:  "Hifens case simple",
-			input: "hifens-test",
-			want:  "hifens-test",
+			name:  "Hyphens case simple",
+			input: "hyphens-test",
+			want:  "hyphens-test",
+		},
+		{
+			name:  "Whitespace mix",
+			input: "a\tb\nc",
+			want:  "a-b-c",
 		},
 		{
 			name:  "Accents pt case",
@@ -57,9 +60,9 @@ func TestSlugify(t *testing.T) {
 			want:  "acao-e-reacao",
 		},
 		{
-			name:  "Ponctuation case",
-			input: "Ponctuation?? Case!!",
-			want:  "ponctuation-case",
+			name:  "Punctuation case",
+			input: "Punctuation?? Case!!",
+			want:  "punctuation-case",
 		},
 		{
 			name:  "Leading/trail case",
@@ -84,7 +87,7 @@ func TestSlugify(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := handlers.Slugify(tt.input)
+			got := slugify(tt.input)
 			if got != tt.want {
 				t.Errorf("expected %s; got %s", tt.want, got)
 			}
@@ -109,7 +112,7 @@ func TestNormalizeTags(t *testing.T) {
 			want:  []string{"tag1"},
 		},
 		{
-			name:  "Two simle tags",
+			name:  "Two simple tags",
 			input: "tag1, tag2",
 			want:  []string{"tag1", "tag2"},
 		},
@@ -129,6 +132,16 @@ func TestNormalizeTags(t *testing.T) {
 			want:  []string{},
 		},
 		{
+			name:  "Whitespace only",
+			input: "   ",
+			want:  []string{},
+		},
+		{
+			name:  "Spaces around commas",
+			input: "  ,  ,  ",
+			want:  []string{},
+		},
+		{
 			name:  "Mixed case",
 			input: "TAG1, tag2    , TAg1,  tag3",
 			want:  []string{"tag1", "tag2", "tag3"},
@@ -136,7 +149,7 @@ func TestNormalizeTags(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := handlers.NormalizeTags(tt.input)
+			got := normalizeTags(tt.input)
 			if equal := slices.Equal(got, tt.want); !equal {
 				t.Errorf("expected %v; got %v", tt.want, got)
 			}

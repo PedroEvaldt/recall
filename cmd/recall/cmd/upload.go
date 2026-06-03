@@ -30,7 +30,7 @@ var uploadCmd = &cobra.Command{
 		tags := uploadTags
 
 		if title == "" {
-			title = strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+			title = defaultTitle(path)
 		}
 
 		file, err := os.Open(path) // #nosec G304 -- path provided by CLI user, runs with user's own privileges
@@ -48,9 +48,13 @@ var uploadCmd = &cobra.Command{
 			return fmt.Errorf("post document: %w", err)
 		}
 
-		fmt.Printf("Uploaded document\nName: %s\nId: %v \n", doc.Title, doc.ID)
+		fmt.Fprintf(cmd.OutOrStdout(), "Uploaded document\nName: %s\nId: %v \n", doc.Title, doc.ID)
 		return nil
 	},
+}
+
+func defaultTitle(path string) string {
+	return strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
 }
 
 func init() {

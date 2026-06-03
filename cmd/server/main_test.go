@@ -37,10 +37,21 @@ func TestServerMain(t *testing.T) {
 	}
 	getenv := func(k string) string { return env[k] }
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	var stderr bytes.Buffer
 	done := make(chan error, 1)
 	go func() { done <- run(ctx, getenv, &stderr) }()
+	t.Cleanup(func() {
+		cancel()
+		select {
+		case err := <-done:
+			if err != nil {
+				t.Errorf("run returned error: %v", err)
+			}
+		case <-time.After(shutdownTimeout):
+			t.Errorf("run did not shut down within %s", shutdownTimeout)
+		}
+	})
+
 	baseURL := "http://127.0.0.1:" + port
 	waitForHealth(t, baseURL+"/health")
 	respHealth, err := http.Get(baseURL + "/health")
@@ -63,15 +74,6 @@ func TestServerMain(t *testing.T) {
 	defer respDocuments.Body.Close()
 	if respDocuments.StatusCode != http.StatusUnauthorized {
 		t.Errorf("expected %v; got %v", http.StatusUnauthorized, respDocuments.StatusCode)
-	}
-	cancel()
-	select {
-	case err := <-done:
-		if err != nil {
-			t.Fatalf("run returned error: %v", err)
-		}
-	case <-time.After(shutdownTimeout):
-		t.Fatalf("run did not shut down within 15s")
 	}
 }
 

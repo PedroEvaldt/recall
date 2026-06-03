@@ -33,21 +33,11 @@ var listCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var (
-			query    string
-			limitStr string
-		)
+		query, limitStr := buildListParams(args, listAll, limit)
 		serverURL := viper.GetString("server")
-		if !listAll {
-			query = strings.Join(args, " ")
-		}
 		c, err := client.New(serverURL, 30*time.Second, viper.GetString("auth_token"))
 		if err != nil {
 			return fmt.Errorf("create client: %w", err)
-		}
-
-		if limit != 0 {
-			limitStr = strconv.Itoa(limit)
 		}
 
 		model := doclist.New(c, query, limitStr, cmd.Context())
@@ -66,6 +56,16 @@ var listCmd = &cobra.Command{
 
 		return nil
 	},
+}
+
+func buildListParams(args []string, all bool, limit int) (query, limitStr string) {
+	if !all {
+		query = strings.Join(args, " ")
+	}
+	if limit != 0 {
+		limitStr = strconv.Itoa(limit)
+	}
+	return query, limitStr
 }
 
 func init() {

@@ -3,7 +3,13 @@
 package handlers_test
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"mime/multipart"
+	"net/http"
+	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -14,7 +20,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 )
 
-func newTestServer(t *testing.T) (*handlers.Handler, *postgres.PostgresContainer) {
+func newTestServer(t *testing.T) (*handlers.Handler, func(), string) {
 	t.Helper()
 	ctx := context.Background()
 	dbName := "documents"
@@ -46,7 +52,8 @@ func newTestServer(t *testing.T) (*handlers.Handler, *postgres.PostgresContainer
 		t.Fatalf("could not make database snapshot: %v", err)
 	}
 
-	fs, err := storage.NewFileStore(t.TempDir())
+	dir := t.TempDir()
+	fs, err := storage.NewFileStore(dir)
 	if err != nil {
 		t.Fatalf("could not create temp filestore: %v", err)
 	}
@@ -58,5 +65,45 @@ func newTestServer(t *testing.T) (*handlers.Handler, *postgres.PostgresContainer
 
 	h := handlers.New(pool, database.New(pool), fs, "test-token")
 
-	return h, ctr
+	reset := func() {
+		if err := ctr.Restore(ctx); err != nil {
+			t.Fatalf("restore: %v", err)
+		}
+		pool.Reset()
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			t.Fatalf("cleanup dir: %v", err)
+		}
+		for _, e := range entries {
+			if err := os.RemoveAll(filepath.Join(dir, e.Name())); err != nil {
+				t.Fatalf("remove dir %s: %v", e.Name(), err)
+			}
+		}
+	}
+	return h, reset, dir
+}
+
+func newMultipartReq(t *testing.T, hasFile bool, title, filename string) *http.Request {
+	var buf bytes.Buffer
+	multWriter := multipart.NewWriter(&buf)
+	if err := multWriter.WriteField("title", title); err != nil {
+		t.Fatalf("could not write title field in multipart writer: %v", err)
+	}
+	if hasFile {
+		fileWriter, err := multWriter.CreateFormFile("file", filename)
+		if err != nil {
+			t.Fatalf("could not create writer from multipart writer: %v", err)
+		}
+		if _, err := fmt.Fprint(fileWriter, "#Go struct file body"); err != nil {
+			t.Fatalf("could not write body into file writer: %v", err)
+		}
+	}
+	if err := multWriter.Close(); err != nil {
+		t.Fatalf("could not close multipart writer: %v", err)
+	}
+
+	req := httptest.NewRequest("POST", "/documents", &buf)
+	req.Header.Set("Content-Type", multWriter.FormDataContentType())
+
+	return req
 }

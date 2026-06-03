@@ -37,7 +37,11 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	title := r.FormValue("title")
+	title := strings.TrimSpace(r.FormValue("title"))
+	if title == "" {
+		respondWithError(w, http.StatusBadRequest, "title is required")
+		return
+	}
 	tags := normalizeTags(r.FormValue("tags"))
 
 	file, header, err := r.FormFile("file")

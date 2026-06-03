@@ -41,4 +41,4 @@ test-all:
 	go test -tags=integratinon -count=1 ./...
 
 test-coverage:
-	go test -tags=integration -coverprofile=/tmp/cov.out -coverpkg=./internal/handlers ./internal/handlers/ && go tool cover -html=/tmp/cov.out
+	go test -tags=integration -coverprofile=/tmp/cov.out -coverpkg=./... ./... && go tool cover -html=/tmp/cov.out

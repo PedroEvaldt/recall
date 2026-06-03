@@ -86,8 +86,10 @@ func newTestServer(t *testing.T) (*handlers.Handler, func(), string) {
 func newMultipartReq(t *testing.T, hasFile bool, title, filename string) *http.Request {
 	var buf bytes.Buffer
 	multWriter := multipart.NewWriter(&buf)
-	if err := multWriter.WriteField("title", title); err != nil {
-		t.Fatalf("could not write title field in multipart writer: %v", err)
+	if title != "nil" {
+		if err := multWriter.WriteField("title", title); err != nil {
+			t.Fatalf("could not write title field in multipart writer: %v", err)
+		}
 	}
 	if hasFile {
 		fileWriter, err := multWriter.CreateFormFile("file", filename)
@@ -102,7 +104,7 @@ func newMultipartReq(t *testing.T, hasFile bool, title, filename string) *http.R
 		t.Fatalf("could not close multipart writer: %v", err)
 	}
 
-	req := httptest.NewRequest("POST", "/documents", &buf)
+	req := httptest.NewRequest("POST", "/document", &buf)
 	req.Header.Set("Content-Type", multWriter.FormDataContentType())
 
 	return req

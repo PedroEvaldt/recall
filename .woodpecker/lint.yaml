@@ -4,8 +4,10 @@ when:
 
 steps:
   - name: lint
-    image: golangci/golangci-lint:v2.6-alpine
+    image: golang:1.26.2-alpine
     commands:
+      - apk add --no-cache git
+      - go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.6.0
       - golangci-lint run ./...
     volumes:
       - go-mod-cache:/go/pkg/mod

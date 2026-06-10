@@ -8,7 +8,7 @@ when:
 
 steps:
   - name: test
-    image: golang:1.26.2-alpine
+    image: golang:1.25-alpine
     commands:
       - go test -tags=integration -count=1 ./... # Integration tests for main pipelines
     volumes:

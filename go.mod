@@ -1,6 +1,6 @@
 module github.com/PedroEvaldt/recall
 
-go 1.26.2
+go 1.25.8
 
 require (
 	charm.land/bubbles/v2 v2.1.0
@@ -14,6 +14,7 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/testcontainers/testcontainers-go v0.42.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.42.0
+	golang.org/x/text v0.34.0
 )
 
 require (
@@ -104,6 +105,5 @@ require (
 	golang.org/x/net v0.49.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/sys v0.43.0 // indirect
-	golang.org/x/text v0.34.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

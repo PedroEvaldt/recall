@@ -4,7 +4,7 @@ when:
 
 steps:
   - name: test
-    image: golang:1.26.2-alpine
+    image: golang:1.25-alpine
     commands:
       - go test -cover ./... # Unit tests for all pipelines
     volumes:

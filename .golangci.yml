@@ -13,3 +13,6 @@ linters:
     - gocritic
     - gosec
     - revive
+formatters:
+  enable:
+    - gofmt

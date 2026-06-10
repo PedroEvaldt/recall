@@ -3,18 +3,10 @@ when:
   - event: push
 
 steps:
-  - name: fmt
-    image: golang:1.26.2-alpine
+  - name: lint
+    image: golangci/golangci-lint:v2.6-alpine
     commands:
-      - test -z "$(go fmt ./...)"
-    volumes:
-      - go-mod-cache:/go/pkg/mod
-      - go-build-cache:/root/.cache/go-build
-  - name: staticcheck
-    image: golang:1.26.2-alpine
-    commands:
-      - go install honnef.co/go/tools/cmd/staticcheck@2026.1
-      - staticcheck ./...
+      - golangci-lint run ./...
     volumes:
       - go-mod-cache:/go/pkg/mod
       - go-build-cache:/root/.cache/go-build

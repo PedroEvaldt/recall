@@ -1,9 +1,0 @@
-# Security pipeline: runs gosec against all Go packages on every push.
-when:
-  - event: push
-
-steps:
-  - name: gosec
-    image: securego/gosec:2.24.6
-    commands:
-      - gosec -quiet ./...

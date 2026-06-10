@@ -1,12 +1,16 @@
-# Test pipeline: runs the Go test suite with coverage on every push.
+# Integration test pipeline: runs the Go test with integration tags for main push.
+depends_on:
+  - lint
+  - test
 when:
   - event: push
+    branch: main
 
 steps:
   - name: test
     image: golang:1.26.2-alpine
     commands:
-      - go test -cover ./... # Unit tests for all pipelines
+      - go test -tags=integration -count=1 ./... # Integration tests for main pipelines
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - go-mod-cache:/go/pkg/mod

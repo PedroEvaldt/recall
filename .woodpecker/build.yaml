@@ -2,7 +2,7 @@
 depends_on:
   - lint
   - test
-  - security
+  - integration
 
 when:
   - event: push

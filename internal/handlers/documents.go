@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io/fs"
 	"log"
+	"math"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -50,7 +51,7 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusBadRequest, "failed to get file from form")
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	filename := header.Filename
 	extension := filepath.Ext(header.Filename)
@@ -118,8 +119,13 @@ func (h *Handler) ListDocuments(w http.ResponseWriter, r *http.Request) {
 			respondWithError(w, http.StatusBadRequest, "limit must be non-negative")
 			return
 		}
+		if limitInt32 > math.MaxInt32 {
+			log.Printf("limit out of range: %v", limitInt32)
+			respondWithError(w, http.StatusBadRequest, "limit too large")
+			return
+		}
 		limit = pgtype.Int4{
-			Int32: int32(limitInt32),
+			Int32: int32(limitInt32), // #nosec G109 -- bounds-checked above (0 <= limitInt32 <= math.MaxInt32)
 			Valid: true,
 		}
 	}
@@ -190,7 +196,7 @@ func (h *Handler) GetDocument(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, "failed to get file")
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	w.Header().Set("Content-Type", document.MimeType)
 	http.ServeContent(w, r, document.Filename, document.CreatedAt.Time, file)

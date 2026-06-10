@@ -86,7 +86,7 @@ func (c *Client) ListDocuments(ctx context.Context, query, limit string) ([]api.
 	if err != nil {
 		return nil, fmt.Errorf("do request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		var errResp struct {
@@ -118,7 +118,7 @@ func (c *Client) GetContent(ctx context.Context, id uuid.UUID) (io.ReadCloser, e
 		return nil, fmt.Errorf("do request: %w", err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode == http.StatusNotFound {
 			return nil, fmt.Errorf("%w: %s", ErrNotFound, id)
 		}
@@ -147,7 +147,7 @@ func (c *Client) GetMeta(ctx context.Context, id uuid.UUID) (api.MetaResponse, e
 		return api.MetaResponse{}, fmt.Errorf("do request: %w", err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode == http.StatusNotFound {
 			return api.MetaResponse{}, fmt.Errorf("%w: %s", ErrNotFound, id)
 		}
@@ -209,7 +209,7 @@ func (c *Client) PostDocument(ctx context.Context, title, filename string, body 
 	if err != nil {
 		return nil, fmt.Errorf("do request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated {
 		var errResp struct {

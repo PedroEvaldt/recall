@@ -56,7 +56,7 @@ func TestConfigPrecedence_ConfigOnly(t *testing.T) {
 func writeConfig(t *testing.T, home, body string) {
 	t.Helper()
 	configDir := filepath.Join(home, ".config", "recall")
-	if err := os.MkdirAll(configDir, 0o755); err != nil {
+	if err := os.MkdirAll(configDir, 0o750); err != nil {
 		t.Fatalf("could not create config dir: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(configDir, "config.yaml"), []byte(body), 0o600); err != nil {

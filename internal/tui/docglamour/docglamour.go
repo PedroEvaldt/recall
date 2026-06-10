@@ -10,12 +10,13 @@ import (
 
 var helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render
 
-type example struct {
+// Example is the Bubble Tea model that renders Markdown in a scrollable viewport.
+type Example struct {
 	viewport viewport.Model
 }
 
 // NewExample renders Markdown content into a scrollable terminal viewport.
-func NewExample(content string, isDark bool) (*example, error) {
+func NewExample(content string, isDark bool) (*Example, error) {
 	const (
 		width  = 78
 		height = 20
@@ -59,17 +60,18 @@ func NewExample(content string, isDark bool) (*example, error) {
 
 	vp.SetContent(str)
 
-	return &example{
+	return &Example{
 		viewport: vp,
 	}, nil
 }
 
-func (e example) Init() tea.Cmd {
+// Init returns nil because the viewport does not need an initial command.
+func (e Example) Init() tea.Cmd {
 	return nil
 }
 
 // Update handles viewport navigation and quit keys.
-func (e example) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (e Example) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
@@ -86,10 +88,10 @@ func (e example) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // View renders the Markdown viewport and navigation help.
-func (e example) View() tea.View {
+func (e Example) View() tea.View {
 	return tea.NewView(e.viewport.View() + e.helpView())
 }
 
-func (e example) helpView() string {
+func (e Example) helpView() string {
 	return helpStyle("\n  ↑/↓: Navigate • q: Quit\n")
 }

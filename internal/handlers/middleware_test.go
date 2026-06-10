@@ -12,7 +12,7 @@ const validToken = "correct-token"
 
 func newSpyHandler() (http.Handler, *bool) {
 	called := false
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	next := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		called = true
 		w.WriteHeader(http.StatusOK)
 	})

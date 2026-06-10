@@ -1,3 +1,4 @@
+// Package cmd contains the recall CLI commands wired into Cobra.
 package cmd
 
 import (
@@ -34,7 +35,7 @@ var getCmd = &cobra.Command{
 
 		hasDarkBg := lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
 
-		model := doclist.New(c, query, "", cmd.Context())
+		model := doclist.New(cmd.Context(), c, query, "")
 		finalModel, err := tea.NewProgram(model).Run()
 		if err != nil {
 			return fmt.Errorf("tui: %w", err)
@@ -56,7 +57,7 @@ var getCmd = &cobra.Command{
 			}
 			return fmt.Errorf("get content: %w", err)
 		}
-		defer body.Close()
+		defer func() { _ = body.Close() }()
 
 		bodyBytes, err := io.ReadAll(body)
 		if err != nil {

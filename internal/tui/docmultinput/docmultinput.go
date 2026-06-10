@@ -70,9 +70,8 @@ func (m MultInputModel) Init() tea.Cmd {
 
 // Update handles field focus, cursor mode changes, text input, and submission.
 func (m MultInputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyPressMsg:
-		switch msg.String() {
+	if keyMsg, ok := msg.(tea.KeyPressMsg); ok {
+		switch keyMsg.String() {
 		case "ctrl+c", "esc":
 			m.quitting = true
 			return m, tea.Quit
@@ -93,7 +92,7 @@ func (m MultInputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Set focus to next input
 		case "tab", "shift+tab", "enter", "up", "down":
-			s := msg.String()
+			s := keyMsg.String()
 
 			// Did the user press enter while the submit button was focused?
 			// If so, exit.

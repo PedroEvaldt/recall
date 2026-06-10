@@ -23,7 +23,7 @@ var listCmd = &cobra.Command{
 	Short: "List documents matching a query",
 	Example: `	recall list go struct
 	recall list go struct -l 5`,
-	PreRunE: func(cmd *cobra.Command, args []string) error {
+	PreRunE: func(_ *cobra.Command, args []string) error {
 		if listAll && len(args) > 0 {
 			return fmt.Errorf("--all cannot be combined with a query")
 		}
@@ -40,7 +40,7 @@ var listCmd = &cobra.Command{
 			return fmt.Errorf("create client: %w", err)
 		}
 
-		model := doclist.New(c, query, limitStr, cmd.Context())
+		model := doclist.New(cmd.Context(), c, query, limitStr)
 		finalModel, err := tea.NewProgram(model).Run()
 		if err != nil {
 			return fmt.Errorf("tui: %w", err)

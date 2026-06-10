@@ -1,3 +1,4 @@
+// Package main is the entrypoint for the recall HTTP server binary.
 package main
 
 import (

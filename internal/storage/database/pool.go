@@ -1,3 +1,4 @@
+// Package database wraps the pgx connection pool used by the recall server.
 package database
 
 import (

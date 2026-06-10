@@ -90,10 +90,13 @@ func TestListDocuments_Success(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		// Two documents with distinguishable fields.
-		w.Write([]byte(`[
+		_, err := w.Write([]byte(`[
 			{"id":"11111111-1111-1111-1111-111111111111","title":"first","mime_type":"text/plain","filename":"a.txt","tags":["x"],"created_at":"2026-01-01T00:00:00Z"},
 			{"id":"22222222-2222-2222-2222-222222222222","title":"second","mime_type":"text/markdown","filename":"b.md","tags":[],"created_at":"2026-01-02T00:00:00Z"}
 		]`))
+		if err != nil {
+			t.Fatalf("write documents: %v", err)
+		}
 	}))
 	defer srv.Close()
 
@@ -161,10 +164,13 @@ func TestListDocuments_Errors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(tt.status)
 				if tt.body != "" {
-					w.Write([]byte(tt.body))
+					_, err := w.Write([]byte(tt.body))
+					if err != nil {
+						t.Fatalf("write body: %v", err)
+					}
 				}
 			}))
 			defer srv.Close()
@@ -200,7 +206,10 @@ func TestGetContent_Success(t *testing.T) {
 		gotAuth = r.Header.Get("Authorization")
 		gotMethod = r.Method
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("hello world"))
+		_, err := w.Write([]byte("hello world"))
+		if err != nil {
+			t.Fatalf("write body: %v", err)
+		}
 	}))
 	defer srv.Close()
 	c := newClient(t, srv.URL)
@@ -208,7 +217,7 @@ func TestGetContent_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetContent: %v", err)
 	}
-	defer result.Close()
+	defer func() { _ = result.Close() }()
 
 	wantPath := "/documents/" + id.String() + "/content"
 	if gotPath != wantPath {
@@ -230,7 +239,7 @@ func TestGetContent_Success(t *testing.T) {
 }
 
 func TestGetContent_NotFound(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer srv.Close()
@@ -270,10 +279,13 @@ func TestGetContent_Errors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(tt.status)
 				if tt.body != "" {
-					w.Write([]byte(tt.body))
+					_, err := w.Write([]byte(tt.body))
+					if err != nil {
+						t.Fatalf("write body: %v", err)
+					}
 				}
 			}))
 			defer srv.Close()
@@ -353,7 +365,7 @@ func TestGetMeta_Success(t *testing.T) {
 }
 
 func TestGetMeta_NotFound(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer srv.Close()
@@ -397,10 +409,13 @@ func TestGetMeta_Errors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(tt.status)
 				if tt.body != "" {
-					w.Write([]byte(tt.body))
+					_, err := w.Write([]byte(tt.body))
+					if err != nil {
+						t.Fatalf("write body: %v", err)
+					}
 				}
 			}))
 			defer srv.Close()
@@ -440,7 +455,7 @@ func TestPostDocument_Success(t *testing.T) {
 		gotMethod = r.Method
 		gotAuth = r.Header.Get("Authorization")
 
-		if err := r.ParseMultipartForm(10 << 20); err != nil {
+		if err := r.ParseMultipartForm(10 << 20); err != nil { // #nosec G120 -- test fake handler, no attack surface
 			t.Errorf("ParseMultipartForm: %v", err)
 			return
 		}
@@ -451,7 +466,7 @@ func TestPostDocument_Success(t *testing.T) {
 			t.Errorf("FormFile: %v", err)
 			return
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 		gotFilename = header.Filename
 		gotFileBody, _ = io.ReadAll(file)
 
@@ -541,10 +556,13 @@ func TestPostDocument_Errors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(tt.status)
 				if tt.body != "" {
-					w.Write([]byte(tt.body))
+					_, err := w.Write([]byte(tt.body))
+					if err != nil {
+						t.Fatalf("write body: %v", err)
+					}
 				}
 			}))
 			defer srv.Close()

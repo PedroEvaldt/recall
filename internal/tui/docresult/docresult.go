@@ -22,9 +22,8 @@ func (m ResultModel) Init() tea.Cmd {
 
 // Update handles navigation and saves the selected choice on enter.
 func (m ResultModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyPressMsg:
-		switch msg.String() {
+	if keyMsg, ok := msg.(tea.KeyPressMsg); ok {
+		switch keyMsg.String() {
 		case "ctrl+c", "q", "esc":
 			return m, tea.Quit
 

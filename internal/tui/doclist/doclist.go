@@ -47,7 +47,7 @@ type Model struct {
 }
 
 // New creates a document list model that fetches results with the provided client.
-func New(c *client.Client, query, limit string, ctx context.Context) Model {
+func New(ctx context.Context, c *client.Client, query, limit string) Model {
 	delegate := list.NewDefaultDelegate()
 	l := list.New([]list.Item{}, delegate, 0, 0)
 	l.Title = "Buscando: " + query

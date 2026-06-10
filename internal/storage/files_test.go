@@ -107,7 +107,7 @@ func TestSaveFileOverwrites(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open file: %v", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	got, err := io.ReadAll(f)
 	if err != nil {
 		t.Fatalf("read file: %v", err)
@@ -122,7 +122,7 @@ func TestLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewFileStore: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	id := uuid.New()
 	content := []byte("test content")
@@ -159,7 +159,10 @@ func TestLifecycle(t *testing.T) {
 		t.Fatalf("OpenFile: %v", err)
 	}
 	got, readErr := io.ReadAll(f)
-	f.Close()
+	err = f.Close()
+	if err != nil {
+		t.Fatalf("close file: %v", err)
+	}
 	if readErr != nil {
 		t.Fatalf("ReadAll: %v", readErr)
 	}
@@ -207,7 +210,7 @@ func TestNewFileStore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewFileStore")
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 	if info, err := os.Stat(baseDir); err != nil || !info.IsDir() {
 		t.Errorf("baseDir should be created as directory")
 	}

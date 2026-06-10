@@ -32,7 +32,7 @@ func TestUpload_Success(t *testing.T) {
 	resetState(t)
 
 	tempFile := filepath.Join(t.TempDir(), "notes.md")
-	if err := os.WriteFile(tempFile, []byte("test content"), 0o644); err != nil {
+	if err := os.WriteFile(tempFile, []byte("test content"), 0o600); err != nil {
 		t.Fatalf("could not write temp file: %v", err)
 	}
 	srv, capturedFields := newUploadServer(t)
@@ -91,10 +91,10 @@ func TestUpload_MissingFile(t *testing.T) {
 func TestUpload_Error(t *testing.T) {
 	resetState(t)
 	tempFile := filepath.Join(t.TempDir(), "foo.md")
-	if err := os.WriteFile(tempFile, []byte("test content"), 0o644); err != nil {
+	if err := os.WriteFile(tempFile, []byte("test content"), 0o600); err != nil {
 		t.Fatalf("could not write temp file: %v", err)
 	}
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 	}))
 	defer srv.Close()
@@ -116,7 +116,7 @@ func TestUpload_EmptyURL(t *testing.T) {
 	t.Setenv("RECALL_SERVER", "")
 	t.Setenv("RECALL_AUTH_TOKEN", "")
 	tempFile := filepath.Join(t.TempDir(), "notes.md")
-	if err := os.WriteFile(tempFile, []byte("test content"), 0o644); err != nil {
+	if err := os.WriteFile(tempFile, []byte("test content"), 0o600); err != nil {
 		t.Fatalf("could not write temp file: %v", err)
 	}
 	rootCmd.SetArgs([]string{"upload", tempFile})
@@ -208,7 +208,7 @@ func newUploadServer(t *testing.T) (*httptest.Server, *captured) {
 		capturedFields.contentType = r.Header.Get("Content-Type")
 		capturedFields.authHeader = r.Header.Get("Authorization")
 
-		if err := r.ParseMultipartForm(20 << 20); err != nil {
+		if err := r.ParseMultipartForm(20 << 20); err != nil { // #nosec G120 -- test fake handler, no attack surface
 			t.Errorf("could not parse multipart form: %v", err)
 			return
 		}
@@ -219,7 +219,7 @@ func newUploadServer(t *testing.T) (*httptest.Server, *captured) {
 			t.Errorf("could not get form file: %v", err)
 			return
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 		capturedFields.fileContent, err = io.ReadAll(file)
 		if err != nil {
 			t.Errorf("could not read file body: %v", err)
@@ -227,7 +227,10 @@ func newUploadServer(t *testing.T) (*httptest.Server, *captured) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		fmt.Fprintln(w, `{"id":"550e8400-e29b-41d4-a716-446655440000","title":"foo","filename":"foo.md"}`)
+		_, err = fmt.Fprintln(w, `{"id":"550e8400-e29b-41d4-a716-446655440000","title":"foo","filename":"foo.md"}`)
+		if err != nil {
+			t.Errorf("could not write id to header: %v", err)
+		}
 	}))
 	return srv, capturedFields
 }

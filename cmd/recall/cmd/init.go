@@ -18,7 +18,7 @@ var initCmd = &cobra.Command{
 	Short:   "initialize recall CLI configuration",
 	Args:    cobra.ExactArgs(0),
 	Example: `	recall init   `,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		model := docmultinput.InitialModel()
 		finalModel, err := tea.NewProgram(model).Run()
 		if err != nil {
@@ -70,10 +70,10 @@ var initCmd = &cobra.Command{
 			return fmt.Errorf("writing config file: %w", err)
 		}
 
-		sucessMsg := fmt.Sprintf("Config saved to %s\n\n%s\n\nAdd this token to your server's AUTH_TOKEN environment variable if you want to change it", configFilePath, content)
-		_, err = fmt.Print(sucessMsg)
+		successMsg := fmt.Sprintf("Config saved to %s\n\n%s\n\nAdd this token to your server's AUTH_TOKEN environment variable if you want to change it", configFilePath, content)
+		_, err = fmt.Print(successMsg)
 		if err != nil {
-			return fmt.Errorf("print final sucess message: %w", err)
+			return fmt.Errorf("print final success message: %w", err)
 		}
 		return nil
 	},

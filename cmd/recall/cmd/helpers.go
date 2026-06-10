@@ -20,11 +20,11 @@ const (
 )
 
 func printError(w io.Writer, err error) {
-	fmt.Fprintf(w, "%serror%s %v\n", ansiRed+ansiBold, ansiReset, err)
+	_, _ = fmt.Fprintf(w, "%serror%s %v\n", ansiRed+ansiBold, ansiReset, err)
 }
 
 func printMissingContent(w io.Writer, title string) {
-	fmt.Fprintf(w, "%smissing content%s document %q was found, but its content is missing\n", ansiYellow+ansiBold, ansiReset, title)
+	_, _ = fmt.Fprintf(w, "%smissing content%s document %q was found, but its content is missing\n", ansiYellow+ansiBold, ansiReset, title)
 }
 
 func isMarkdownDocument(doc api.DocumentResponse) bool {

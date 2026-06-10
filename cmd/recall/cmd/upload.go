@@ -37,7 +37,7 @@ var uploadCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("open %s: %w", path, err)
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 
 		c, err := client.New(serverURL, 30*time.Second, viper.GetString("auth_token"))
 		if err != nil {
@@ -48,7 +48,10 @@ var uploadCmd = &cobra.Command{
 			return fmt.Errorf("post document: %w", err)
 		}
 
-		fmt.Fprintf(cmd.OutOrStdout(), "Uploaded document\nName: %s\nId: %v \n", doc.Title, doc.ID)
+		_, err = fmt.Fprintf(cmd.OutOrStdout(), "Uploaded document\nName: %s\nId: %v \n", doc.Title, doc.ID)
+		if err != nil {
+			return fmt.Errorf("print uploaded document: %w", err)
+		}
 		return nil
 	},
 }

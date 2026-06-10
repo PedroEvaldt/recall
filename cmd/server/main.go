@@ -46,7 +46,7 @@ func run(ctx context.Context, getenv func(string) string, stderr io.Writer) erro
 		return fmt.Errorf("storage: %w", err)
 	}
 
-	handler := handlers.NewServer(pool, queries, fileStore, cfg.AuthToken)
+	handler := handlers.NewServer(pool, queries, fileStore, cfg.AuthToken, logger)
 
 	srv := &http.Server{
 		Addr:         net.JoinHostPort(cfg.Host, cfg.Port),

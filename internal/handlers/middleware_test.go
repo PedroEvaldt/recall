@@ -80,7 +80,8 @@ func TestBearerAuthMiddleware(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			next, called := newSpyHandler()
-			handler := bearerAuthMiddleware(validToken)(next)
+			h := newTestHandler()
+			handler := h.bearerAuthMiddleware()(next)
 
 			req := httptest.NewRequest(http.MethodGet, tt.target, nil)
 			if tt.authHeader != "" {

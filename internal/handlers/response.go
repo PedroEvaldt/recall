@@ -2,14 +2,14 @@ package handlers
 
 import (
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 )
 
-func respondWithJSON(w http.ResponseWriter, code int, payload any) {
+func (h *Handler) respondWithJSON(w http.ResponseWriter, code int, payload any) {
 	body, err := json.Marshal(payload)
 	if err != nil {
-		log.Printf("respondWithJSON marshal: %v", err)
+		h.logger.Error("respondWithJSON marshal", slog.String("error", err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -17,15 +17,15 @@ func respondWithJSON(w http.ResponseWriter, code int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	if _, err := w.Write(body); err != nil {
-		log.Printf("respondWithJSON write: %v", err)
+		h.logger.Error("respondWithJSON write", slog.String("error", err.Error()))
 	}
 }
 
-func respondWithError(w http.ResponseWriter, code int, msg string) {
-	respondWithJSON(w, code, map[string]string{"error": msg})
+func (h *Handler) respondWithError(w http.ResponseWriter, code int, msg string) {
+	h.respondWithJSON(w, code, map[string]string{"error": msg})
 }
 
-func respondUnauthorized(w http.ResponseWriter) {
+func (h *Handler) respondUnauthorized(w http.ResponseWriter) {
 	w.Header().Set("WWW-Authenticate", `Bearer realm="restricted", charset="UTF-8"`)
-	respondWithError(w, http.StatusUnauthorized, "unauthorized")
+	h.respondWithError(w, http.StatusUnauthorized, "unauthorized")
 }

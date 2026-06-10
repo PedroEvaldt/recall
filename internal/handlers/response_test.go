@@ -2,10 +2,19 @@ package handlers
 
 import (
 	"encoding/json"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
+
+func newTestHandler() *Handler {
+	return &Handler{
+		authToken: validToken,
+		logger:    slog.New(slog.NewTextHandler(io.Discard, nil)),
+	}
+}
 
 func TestRespondWithJSON(t *testing.T) {
 	type requestBody struct {
@@ -51,7 +60,8 @@ func TestRespondWithJSON(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			rec := httptest.NewRecorder()
-			respondWithJSON(rec, tt.code, tt.body)
+			h := newTestHandler()
+			h.respondWithJSON(rec, tt.code, tt.body)
 			if rec.Code != tt.code {
 				t.Errorf("expected code %v; got %v", tt.code, rec.Code)
 			}
@@ -88,8 +98,9 @@ func TestRespondWithError(t *testing.T) {
 		result errorResponse
 	)
 	rec := httptest.NewRecorder()
+	h := newTestHandler()
 
-	respondWithError(rec, http.StatusNotFound, errMsg)
+	h.respondWithError(rec, http.StatusNotFound, errMsg)
 	if rec.Code != http.StatusNotFound {
 		t.Errorf("expected code %v; got %v", http.StatusNotFound, rec.Code)
 	}
@@ -111,7 +122,8 @@ func TestRespondUnauthorized(t *testing.T) {
 	var result unauthorizedMsg
 
 	rec := httptest.NewRecorder()
-	respondUnauthorized(rec)
+	h := newTestHandler()
+	h.respondUnauthorized(rec)
 
 	if rec.Code != http.StatusUnauthorized {
 		t.Errorf("expected code %v; got %v", http.StatusUnauthorized, rec.Code)

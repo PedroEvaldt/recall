@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -16,6 +16,7 @@ import (
 
 	"github.com/PedroEvaldt/recall/internal/config"
 	"github.com/PedroEvaldt/recall/internal/handlers"
+	"github.com/PedroEvaldt/recall/internal/logging"
 	"github.com/PedroEvaldt/recall/internal/storage"
 	"github.com/PedroEvaldt/recall/internal/storage/database"
 )
@@ -24,10 +25,11 @@ func run(ctx context.Context, getenv func(string) string, stderr io.Writer) erro
 	ctx, cancel := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	logger := log.New(stderr, "", log.LstdFlags)
+	logger := logging.New(stderr, getenv("LOG_LEVEL"), getenv("LOG_FORMAT"))
 
 	cfg, err := config.LoadFrom(getenv)
 	if err != nil {
+		logger.Error("failed to load config", slog.String("error", err.Error()))
 		return fmt.Errorf("config: %w", err)
 	}
 
@@ -56,7 +58,7 @@ func run(ctx context.Context, getenv func(string) string, stderr io.Writer) erro
 
 	serverErr := make(chan error, 1)
 	go func() {
-		logger.Printf("server listening on %s\n", srv.Addr)
+		logger.Info("server listening", slog.String("addr", srv.Addr))
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serverErr <- err
 		}
@@ -67,7 +69,7 @@ func run(ctx context.Context, getenv func(string) string, stderr io.Writer) erro
 	case err := <-serverErr:
 		return fmt.Errorf("server: %w", err)
 	case <-ctx.Done():
-		logger.Println("shutdown signal received")
+		logger.Info("shutdown signal received")
 	}
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

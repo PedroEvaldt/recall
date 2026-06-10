@@ -13,6 +13,8 @@ type Config struct {
 	Host        string
 	Port        string
 	StoragePath string
+	LogLevel    string
+	LogFormat   string
 }
 
 // LoadFrom loads server configuration from the provided getenv function.
@@ -27,6 +29,8 @@ func LoadFrom(getenv func(string) string) (*Config, error) {
 		Host:        getEnvDefault(getenv, "SERVER_HOST", "localhost"),
 		Port:        getEnvDefault(getenv, "SERVER_PORT", "8080"),
 		StoragePath: getEnvDefault(getenv, "STORAGE_PATH", "./storage"),
+		LogLevel:    getEnvDefault(getenv, "LOG_LEVEL", "info"),
+		LogFormat:   getEnvDefault(getenv, "LOG_FORMAT", "text"),
 	}
 
 	if cfg.AuthToken == "" {

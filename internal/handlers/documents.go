@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"log/slog"
 	"math"
@@ -76,9 +77,20 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 		Tags:        tags,
 	})
 	if err != nil {
-		h.logger.Error("create document", slog.String("error", err.Error()))
+		h.logger.Error("create document",
+			slog.Group("document",
+				slog.String("title", title),
+				slog.String("filename", filename),
+				slog.String("doc_id", uuidInt.String()),
+				slog.String("storage_path", path),
+			),
+			slog.String("error", err.Error()),
+		)
 		if delErr := h.fileStore.DeleteFile(path); delErr != nil {
-			h.logger.Error("failed to cleanup orphan file", slog.String("error", delErr.Error()))
+			h.logger.Error("failed to cleanup orphan file",
+				slog.String("storage_path", path),
+				slog.String("doc_id", uuidInt.String()),
+				slog.String("error", delErr.Error()))
 		}
 		h.respondWithError(w, http.StatusInternalServerError, "failed to save document")
 		return
@@ -146,12 +158,15 @@ func (h *Handler) ListDocuments(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	response := make([]api.DocumentResponse, 0, len(documents))
+	var orphanErrs []error
 	for _, document := range documents {
 		if !h.fileStore.Exists(document.StoragePath) {
-			h.logger.Error("list: skipping document — storage file missing",
-				slog.String("title", document.Title),
-				slog.String("storage_path", document.StoragePath),
-			)
+			orphanErrs = append(orphanErrs, fmt.Errorf(
+				"doc_id=%s title=%q storage_path=%q",
+				uuid.UUID(document.ID.Bytes).String(),
+				document.Title,
+				document.StoragePath,
+			))
 			continue
 		}
 		id, _ := uuid.FromBytes(document.ID.Bytes[:])
@@ -163,6 +178,11 @@ func (h *Handler) ListDocuments(w http.ResponseWriter, r *http.Request) {
 			Tags:      document.Tags,
 			CreatedAt: document.CreatedAt.Time,
 		})
+	}
+	if len(orphanErrs) > 0 {
+		h.logger.Error("list: skipped documents with missing storage files",
+			slog.Int("count", len(orphanErrs)),
+			slog.String("error", errors.Join(orphanErrs...).Error()))
 	}
 	h.respondWithJSON(w, http.StatusOK, response)
 }

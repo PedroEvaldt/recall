@@ -31,10 +31,11 @@ const (
 // CreateDocument accepts a multipart upload, stores the file content on disk,
 // and persists document metadata in PostgreSQL.
 func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
+	log := h.logger.With(slog.String("request_id", RequestID(r.Context())))
 	r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
 	err := r.ParseMultipartForm(maxMemorySize) // #nosec G120 -- request body is already limited by MaxBytesReader above.
 	if err != nil {
-		h.logger.Error("multipart form error", slog.String("error", err.Error()))
+		log.Error("multipart form error", slog.String("error", err.Error()))
 		h.respondWithError(w, http.StatusBadRequest, "failed to get multipart form")
 		return
 	}
@@ -48,7 +49,7 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		h.logger.Error("get file from form", slog.String("error", err.Error()))
+		log.Error("get file from form", slog.String("error", err.Error()))
 		h.respondWithError(w, http.StatusBadRequest, "failed to get file from form")
 		return
 	}
@@ -60,7 +61,7 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 	uuidInt := uuid.New()
 	path, size, err := h.fileStore.SaveFile(uuidInt, extension, file)
 	if err != nil {
-		h.logger.Error("save file", slog.String("error", err.Error()))
+		log.Error("save file", slog.String("error", err.Error()))
 		h.respondWithError(w, http.StatusInternalServerError, "failed to save file")
 		return
 	}
@@ -77,7 +78,7 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 		Tags:        tags,
 	})
 	if err != nil {
-		h.logger.Error("create document",
+		log.Error("create document",
 			slog.Group("document",
 				slog.String("title", title),
 				slog.String("filename", filename),
@@ -87,7 +88,7 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 			slog.String("error", err.Error()),
 		)
 		if delErr := h.fileStore.DeleteFile(path); delErr != nil {
-			h.logger.Error("failed to cleanup orphan file",
+			log.Error("failed to cleanup orphan file",
 				slog.String("storage_path", path),
 				slog.String("doc_id", uuidInt.String()),
 				slog.String("error", delErr.Error()))
@@ -109,6 +110,7 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 
 // ListDocuments returns document metadata matching the optional query and limit.
 func (h *Handler) ListDocuments(w http.ResponseWriter, r *http.Request) {
+	log := h.logger.With(slog.String("request_id", RequestID(r.Context())))
 	var (
 		documents  []database.Document
 		err        error
@@ -122,17 +124,17 @@ func (h *Handler) ListDocuments(w http.ResponseWriter, r *http.Request) {
 	if limitTerm != "" {
 		limitInt32, err = strconv.Atoi(limitTerm)
 		if err != nil {
-			h.logger.Error("convert limit to int", slog.String("error", err.Error()))
+			log.Error("convert limit to int", slog.String("error", err.Error()))
 			h.respondWithError(w, http.StatusBadRequest, "failed to convert limit to int")
 			return
 		}
 		if limitInt32 < 0 {
-			h.logger.Error("negative limit", slog.Int("limit", limitInt32))
+			log.Error("negative limit", slog.Int("limit", limitInt32))
 			h.respondWithError(w, http.StatusBadRequest, "limit must be non-negative")
 			return
 		}
 		if limitInt32 > math.MaxInt32 {
-			h.logger.Error("limit out of range", slog.Int("limit", limitInt32))
+			log.Error("limit out of range", slog.Int("limit", limitInt32))
 			h.respondWithError(w, http.StatusBadRequest, "limit too large")
 			return
 		}
@@ -145,14 +147,14 @@ func (h *Handler) ListDocuments(w http.ResponseWriter, r *http.Request) {
 	if searchTerm == "" {
 		documents, err = h.queries.ListAllDocuments(r.Context(), limit)
 		if err != nil {
-			h.logger.Error("list all documents", slog.String("error", err.Error()))
+			log.Error("list all documents", slog.String("error", err.Error()))
 			h.respondWithError(w, http.StatusInternalServerError, "failed to list all documents")
 			return
 		}
 	} else {
 		documents, err = h.queries.ListDocuments(r.Context(), database.ListDocumentsParams{SearchTerm: searchTerm, Limit: limit})
 		if err != nil {
-			h.logger.Error("list documents", slog.String("error", err.Error()))
+			log.Error("list documents", slog.String("error", err.Error()))
 			h.respondWithError(w, http.StatusInternalServerError, "failed to list documents")
 			return
 		}
@@ -180,7 +182,7 @@ func (h *Handler) ListDocuments(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	if len(orphanErrs) > 0 {
-		h.logger.Error("list: skipped documents with missing storage files",
+		log.Error("list: skipped documents with missing storage files",
 			slog.Int("count", len(orphanErrs)),
 			slog.String("error", errors.Join(orphanErrs...).Error()))
 	}
@@ -189,10 +191,11 @@ func (h *Handler) ListDocuments(w http.ResponseWriter, r *http.Request) {
 
 // GetDocument streams the stored document content for a document ID.
 func (h *Handler) GetDocument(w http.ResponseWriter, r *http.Request) {
+	log := h.logger.With(slog.String("request_id", RequestID(r.Context())))
 	docID := r.PathValue("id")
 	docUUID, err := uuid.Parse(docID)
 	if err != nil {
-		h.logger.Error("transform id to uuid", slog.String("error", err.Error()))
+		log.Error("transform id to uuid", slog.String("error", err.Error()))
 		h.respondWithError(w, http.StatusBadRequest, "could not transform this id to uuid")
 		return
 	}
@@ -203,7 +206,7 @@ func (h *Handler) GetDocument(w http.ResponseWriter, r *http.Request) {
 			h.respondWithError(w, http.StatusNotFound, "uuid does not exist")
 			return
 		}
-		h.logger.Error("get document", slog.String("error", err.Error()))
+		log.Error("get document", slog.String("error", err.Error()))
 		h.respondWithError(w, http.StatusInternalServerError, "failed to get document")
 		return
 	}
@@ -211,11 +214,11 @@ func (h *Handler) GetDocument(w http.ResponseWriter, r *http.Request) {
 	file, err := h.fileStore.OpenFile(document.StoragePath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			h.logger.Error("get file: storage file missing", slog.String("storage_path", document.StoragePath))
+			log.Error("get file: storage file missing", slog.String("storage_path", document.StoragePath))
 			h.respondWithError(w, http.StatusNotFound, "document content has been removed from storage")
 			return
 		}
-		h.logger.Error("get file", slog.String("error", err.Error()))
+		log.Error("get file", slog.String("error", err.Error()))
 		h.respondWithError(w, http.StatusInternalServerError, "failed to get file")
 		return
 	}
@@ -227,10 +230,11 @@ func (h *Handler) GetDocument(w http.ResponseWriter, r *http.Request) {
 
 // GetDocumentMeta returns metadata for a single document ID.
 func (h *Handler) GetDocumentMeta(w http.ResponseWriter, r *http.Request) {
+	log := h.logger.With(slog.String("request_id", RequestID(r.Context())))
 	docID := r.PathValue("id")
 	docUUID, err := uuid.Parse(docID)
 	if err != nil {
-		h.logger.Error("transform id to uuid", slog.String("error", err.Error()))
+		log.Error("transform id to uuid", slog.String("error", err.Error()))
 		h.respondWithError(w, http.StatusBadRequest, "could not transform this id to uuid")
 		return
 	}
@@ -241,7 +245,7 @@ func (h *Handler) GetDocumentMeta(w http.ResponseWriter, r *http.Request) {
 			h.respondWithError(w, http.StatusNotFound, "uuid does not exist")
 			return
 		}
-		h.logger.Error("get document", slog.String("error", err.Error()))
+		log.Error("get document", slog.String("error", err.Error()))
 		h.respondWithError(w, http.StatusInternalServerError, "failed to get document")
 		return
 	}

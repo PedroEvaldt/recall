@@ -1,17 +1,41 @@
 package handlers
 
 import (
+	"context"
 	"crypto/subtle"
 	"log/slog"
 	"net/http"
 	"strings"
 
 	"github.com/felixge/httpsnoop"
+	"github.com/google/uuid"
 )
+
+type ctxKey string
+
+const (
+	requestIDKey     ctxKey = "request_id"
+	maxRequestIDSize int    = 128
+)
+
+// RequestID returns the request_id propagated through the context by the
+// logging middleware, or "" if none is set.
+func RequestID(ctx context.Context) string {
+	if v, ok := ctx.Value(requestIDKey).(string); ok {
+		return v
+	}
+	return ""
+}
 
 func (h *Handler) loggingMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			id := strings.TrimSpace(r.Header.Get("X-Request-ID"))
+			if id == "" || len(id) > maxRequestIDSize {
+				id = uuid.NewString()
+			}
+			w.Header().Set("X-Request-ID", id)
+			r = r.WithContext(context.WithValue(r.Context(), requestIDKey, id))
 			m := httpsnoop.CaptureMetrics(next, w, r)
 			h.logger.LogAttrs(r.Context(), slog.LevelInfo, "request completed",
 				slog.String("method", r.Method),
@@ -19,6 +43,7 @@ func (h *Handler) loggingMiddleware() func(http.Handler) http.Handler {
 				slog.Int("status", m.Code),
 				slog.Duration("duration", m.Duration),
 				slog.Int64("bytes_written", m.Written),
+				slog.String("request_id", id),
 			)
 		})
 	}

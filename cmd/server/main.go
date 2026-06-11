@@ -75,7 +75,7 @@ func run(ctx context.Context, getenv func(string) string, stderr io.Writer) erro
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(shutdownCtx); err != nil {
-		return fmt.Errorf("graceful shutdown: %v", err)
+		return fmt.Errorf("graceful shutdown: %w", err)
 	}
 	return nil
 }

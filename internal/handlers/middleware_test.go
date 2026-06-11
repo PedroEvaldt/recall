@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -80,7 +82,8 @@ func TestBearerAuthMiddleware(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			next, called := newSpyHandler()
-			handler := bearerAuthMiddleware(validToken)(next)
+			h := newTestHandler()
+			handler := h.bearerAuthMiddleware()(next)
 
 			req := httptest.NewRequest(http.MethodGet, tt.target, nil)
 			if tt.authHeader != "" {
@@ -115,3 +118,96 @@ func TestBearerAuthMiddleware(t *testing.T) {
 		})
 	}
 }
+
+func TestLoggingMiddleware(t *testing.T) {
+	tests := []struct {
+		name           string
+		method         string
+		target         string
+		handler        http.HandlerFunc
+		wantStatus     float64
+		wantBytesMin   float64
+		wantBytesExact *float64
+	}{
+		{
+			name:   "200 with body",
+			method: http.MethodGet,
+			target: "/documents",
+			handler: func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(`{"ok":true}`))
+			},
+			wantStatus:   200,
+			wantBytesMin: 1,
+		},
+		{
+			name:   "custom status",
+			method: http.MethodPost,
+			target: "/document",
+			handler: func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusCreated)
+				_, _ = w.Write([]byte(`created`))
+			},
+			wantStatus:   201,
+			wantBytesMin: 1,
+		},
+		{
+			name:   "no write defaults to 200",
+			method: http.MethodGet,
+			target: "/health",
+			handler: func(_ http.ResponseWriter, _ *http.Request) {
+			},
+			wantStatus:     200,
+			wantBytesExact: floatPtr(0),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			h := &Handler{
+				authToken: validToken,
+				logger:    slog.New(slog.NewJSONHandler(&buf, nil)),
+			}
+			handler := h.loggingMiddleware()(tt.handler)
+
+			req := httptest.NewRequest(tt.method, tt.target, nil)
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+
+			var entry map[string]any
+			if err := json.Unmarshal(buf.Bytes(), &entry); err != nil {
+				t.Fatalf("unmarshal log entry: %v; raw=%q", err, buf.String())
+			}
+
+			if entry["msg"] != "request completed" {
+				t.Errorf("expected msg %q; got %v", "request completed", entry["msg"])
+			}
+			if entry["method"] != tt.method {
+				t.Errorf("expected method %q; got %v", tt.method, entry["method"])
+			}
+			if entry["path"] != tt.target {
+				t.Errorf("expected path %q; got %v", tt.target, entry["path"])
+			}
+			if entry["status"] != tt.wantStatus {
+				t.Errorf("expected status %v; got %v", tt.wantStatus, entry["status"])
+			}
+			if dur, ok := entry["duration"].(float64); !ok || dur <= 0 {
+				t.Errorf("expected duration > 0; got %v", entry["duration"])
+			}
+			bytesWritten, ok := entry["bytes_written"].(float64)
+			if !ok {
+				t.Fatalf("expected bytes_written to be number; got %T", entry["bytes_written"])
+			}
+			if tt.wantBytesExact != nil {
+				if bytesWritten != *tt.wantBytesExact {
+					t.Errorf("expected bytes_written %v; got %v", *tt.wantBytesExact, bytesWritten)
+				}
+			} else if bytesWritten < tt.wantBytesMin {
+				t.Errorf("expected bytes_written >= %v; got %v", tt.wantBytesMin, bytesWritten)
+			}
+		})
+	}
+}
+
+func floatPtr(f float64) *float64 { return &f }

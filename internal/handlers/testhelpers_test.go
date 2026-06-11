@@ -6,6 +6,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"log/slog"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -63,7 +65,8 @@ func newTestServer(t *testing.T) (*handlers.Handler, func(), string) {
 	}
 	t.Cleanup(pool.Close)
 
-	h := handlers.New(pool, database.New(pool), fs, "test-token")
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	h := handlers.New(pool, database.New(pool), fs, "test-token", logger)
 
 	reset := func() {
 		if err := ctr.Restore(ctx); err != nil {

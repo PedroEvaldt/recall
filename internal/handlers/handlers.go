@@ -36,6 +36,7 @@ func NewServer(pool *pgxpool.Pool, queries *database.Queries, fileStore *storage
 	addRoutes(mux, h)
 	var handler http.Handler = mux
 	handler = h.bearerAuthMiddleware()(handler)
+	handler = h.metricsMiddleware()(handler)
 	handler = h.loggingMiddleware()(handler)
 	return handler
 }

@@ -13,6 +13,7 @@ import (
 	"unicode"
 
 	"github.com/PedroEvaldt/recall/internal/api"
+	"github.com/PedroEvaldt/recall/internal/metrics"
 	"github.com/PedroEvaldt/recall/internal/storage/database"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -98,6 +99,7 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id, _ := uuid.FromBytes(document.ID.Bytes[:])
+	metrics.DocumentsUploadedTotal.Inc()
 	h.respondWithJSON(w, http.StatusCreated, api.DocumentResponse{
 		ID:        id,
 		Title:     document.Title,

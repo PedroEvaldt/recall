@@ -5,8 +5,10 @@ import (
 	"crypto/subtle"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 
+	"github.com/PedroEvaldt/recall/internal/metrics"
 	"github.com/felixge/httpsnoop"
 	"github.com/google/uuid"
 )
@@ -52,7 +54,7 @@ func (h *Handler) loggingMiddleware() func(http.Handler) http.Handler {
 func (h *Handler) bearerAuthMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/health" {
+			if r.URL.Path == "/health" || r.URL.Path == "/metrics" {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -72,6 +74,22 @@ func (h *Handler) bearerAuthMiddleware() func(http.Handler) http.Handler {
 				return
 			}
 			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func (h *Handler) metricsMiddleware() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			m := httpsnoop.CaptureMetrics(next, w, r)
+			method := r.Method
+			route := r.Pattern
+			if route == "" {
+				route = "unknown"
+			}
+			status := strconv.Itoa(m.Code)
+			metrics.HTTPRequestsTotal.WithLabelValues(method, route, status).Inc()
+			metrics.HTTPRequestDuration.WithLabelValues(method, route).Observe(m.Duration.Seconds())
 		})
 	}
 }
